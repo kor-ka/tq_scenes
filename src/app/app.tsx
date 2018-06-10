@@ -32,7 +32,7 @@ const SceneDay: React.SFC = (props) => {
 const SceneNight: React.SFC = (props) => {
   return (
     <svg height="100%" width="100%" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1556 1571" className={(props as any).className} >
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+      <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
         <rect id="Rectangle" fill="#062138" x="0" y="0" width="1555" height="788"></rect>
         <polygon id="Path-11" fill="#01192D" points="0 692 1555 745.564347 1555 1480 7.95165316 1480"></polygon>
         <polygon id="Path-8" fill="#061422" points="972.24465 692 621 866.046529 1554.24399 1208.35692 1554.24399 782.471567"></polygon>
@@ -58,8 +58,8 @@ const SceneNight: React.SFC = (props) => {
         <polygon id="flame4" fill-opacity="0.861101676" fill="#FFA400" transform="translate(1016.105667, 924.978059) rotate(27.000000) translate(-1016.105667, -924.978059) " points="1016.10567 917.096977 998.678487 932.85914 1033.53285 932.85914"></polygon>
         <polygon id="flame4" fill-opacity="0.861101676" fill="#FFA400" transform="translate(985.890258, 940.322244) rotate(27.000000) translate(-985.890258, -940.322244) " points="981.711589 929.715844 976.827414 950.928643 994.953102 941.693144"></polygon>
         <polygon id="flame4" fill-opacity="0.861101676" fill="#FFA400" transform="translate(1011.173080, 959.234339) rotate(27.000000) translate(-1011.173080, -959.234339) " points="1019.88667 946.576237 1002.45949 962.338399 1015.22864 971.892441"></polygon>
-    </g>
-</svg>
+      </g>
+    </svg>
   );
 }
 
@@ -153,10 +153,22 @@ const Root = Glamorous.div({
   overflow: 'hidden',
 });
 
+class RootCpmponent extends React.Component<{}, { time: 'day' | 'night' }>{
+  constructor(props: { time: 'day' | 'night' }) {
+    super(props);
+    this.state = { time: 'day' };
+  }
+
+  render() {
+    return (
+      <Root onClick={() => { this.setState({ time: this.state.time === 'day' ? 'night' : 'day' }) }}>
+        {this.state.time === 'day' ? <BluredMovedSceneDay /> : <BluredMovedSceneNight />}
+      </Root>
+    );
+  }
+}
+
 ReactDOM.render(
-  (<Root>
-    {/* <BluredMovedSceneDay /> */}
-    <BluredMovedSceneNight />
-  </Root>),
+  <RootCpmponent />,
   document.getElementById("root")
 );
