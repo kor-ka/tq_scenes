@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "webpack -p",
-    "start": "webpack-dev-server -d --content-base ./public"
+    "start": "webpack-dev-server -d --content-base ./public",
+    "postbuild": "cp -r public docs/"
   },
   "dependencies": {
     "@types/react": "16.0.40",
