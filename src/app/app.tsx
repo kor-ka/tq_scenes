@@ -68,18 +68,11 @@ const animation = {
 };
 
 const blur = {
-  // filter: 'blur(25px)'
+  filter: 'blur(25px)'
 };
 
 const svgDAy = <svg height="100%" width="100%" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1556 1571" >
-
-  <filter id="blur" color-interpolation-filters="sRGB">
-    <feGaussianBlur stdDeviation="20"></feGaussianBlur>
-  </filter>
-
-  <g id="Page-1" filter="url(#blur)">
-
-
+  <g id="Page-1">
     <rect id="Rectangle" fill="#B9D2E7" x="1" y="0" width="1555" height="788"></rect>
     <polygon id="Path-11" fill="#0365B7" points="0.971892547 692 1555.97189 745.564347 1555.97189 1480 8.92354571 1480"></polygon>
     <polygon id="Path-8" fill="#143F68" points="973.24465 692 622 866.046529 1555.24399 1208.35692 1555.24399 782.471567"></polygon>
@@ -100,13 +93,7 @@ const svgDAy = <svg height="100%" width="100%" preserveAspectRatio="xMidYMid sli
 </svg>;
 
 const svgNight = <svg height="100%" width="100%" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1556 1571" >
-
-  <filter id="blur" color-interpolation-filters="sRGB">
-    <feGaussianBlur stdDeviation="20"></feGaussianBlur>
-  </filter>
-
-  <g id="Page-1" filter="url(#blur)">
-
+  <g id="Page-1" >
     <rect id="Rectangle" fill="#062138" x="0" y="0" width="1555" height="788"></rect>
     <polygon id="Path-11" fill="#01192D" points="0 692 1555 745.564347 1555 1480 7.95165316 1480"></polygon>
     <polygon id="Path-8" fill="#061422" points="972.24465 692 621 866.046529 1554.24399 1208.35692 1554.24399 782.471567"></polygon>
