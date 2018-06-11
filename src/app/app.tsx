@@ -123,11 +123,10 @@ const svgNight = <svg height="100%" width="100%" preserveAspectRatio="xMidYMid s
 </svg>;
 
 const StyledScene = Glamorous.div<{ blur: boolean, animate: boolean }>((props) => ({
-  transform: 'scale(1.2)',
+  transform: 'scale(1.2) translate3d(0, 0, 0) translateZ(0)',
   ...(props.animate ? animation : {}),
   ...(props.blur ? blur : {}),
 }));
-
 
 class Scene extends React.Component<{ blur: boolean, scene: JSX.Element, animate: boolean }> {
   render() {
