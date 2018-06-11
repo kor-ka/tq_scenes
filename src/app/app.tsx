@@ -6,15 +6,15 @@ import Glamorous from 'glamorous';
 const flameLeft = glamor.keyframes({
   '0%': {
     opacity: 0,
-    transform: 'translate(0, 0)',
+    transform: 'translate3d(0, 0)',
   },
   '50%': {
     opacity: 1,
-    transform: 'translate(0.9%, -0.1%)',
+    transform: 'translate3d(0.9%, -0.1%)',
   },
   '100%': {
     opacity: 0,
-    transform: 'translate(0.7%, -2.8%)',
+    transform: 'translate3d(0.7%, -2.8%)',
 
   }
 });
@@ -22,15 +22,15 @@ const flameLeft = glamor.keyframes({
 const flameRight = glamor.keyframes({
   '0%': {
     opacity: 0,
-    transform: 'translate(-0.1%, 0.1%)',
+    transform: 'translate3d(-0.1%, 0.1%)',
   },
   '50%': {
     opacity: 1,
-    transform: 'translate(-0.9%, -0.2%)',
+    transform: 'translate3d(-0.9%, -0.2%)',
   },
   '100%': {
     opacity: 0,
-    transform: 'translate(-0.7%, -3.9%)',
+    transform: 'translate3d(-0.7%, -3.9%)',
 
   }
 });
@@ -51,26 +51,18 @@ const glow = glamor.keyframes({
 
 const animation = {
   '& #flame1, & #flame4': {
-    // animationName: `${showAnimation}`,
-    animationTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
     animation: `${flameLeft} 2.4s infinite `
   },
 
   '& #flame2, & #flame3': {
-    // animationName: `${showAnimation}`,
-    animationTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
     animation: `${flameRight} 2.2s infinite `
   },
 
   '& #flame_base1, & #flame_base2': {
-    // animationName: `${showAnimation}`,
-    animationTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
     animation: `${glow} 5s infinite `
   },
 
   '& #flame_base3': {
-    // animationName: `${showAnimation}`,
-    animationTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
     animation: `${glow} 4.2s infinite `
   },
 };
