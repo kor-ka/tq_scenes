@@ -308,7 +308,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
                   this.props.submit(res)
                 }} />
               </Field>
-              <Horizontal style={{marginBottom: 0}}>
+              <Horizontal style={{ marginBottom: 0 }}>
                 <button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
                   res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
                   this.props.submit(res)
@@ -327,10 +327,23 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
           </Vertical>
         ))}
         <button onClick={() => {
-          res.steps.push({
-            timing: 50,
-            opacity: 1
-          })
+          if (res.steps.length === 0) {
+            // timing: 0,
+            // opacity: 1
+            res.steps.push({
+              timing: 0,
+              opacity: 0
+            }),
+              res.steps.push({
+                timing: 100,
+                opacity: 1
+              })
+          } else {
+            res.steps.push({
+              ...res.steps[res.steps.length - 1]
+            })
+          }
+
           this.props.submit(res)
         }}> + </button>
 
