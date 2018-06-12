@@ -225,7 +225,7 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
         </HorizontalSB>
         <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal>
 
-        <button onClick={() => this.props.delete(this.props.item.id)}>Delete</button>
+        <button onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</button>
       </Vertical>
     );
   }
@@ -287,7 +287,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
             </Vertical>
           </Vertical>
         ))}
-        <button onClick={() => this.props.delete(this.props.item.id)}>Delete</button>
+        <button onClick={() => this.props.delete(this.props.item.id)}>Delete animation</button>
       </Vertical>
     );
   }
