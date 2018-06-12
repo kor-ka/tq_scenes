@@ -78,7 +78,7 @@ class Polygon {
   points: number[];
   fill: string;
   opacity?: number;
-  animation: string;
+  animation?: string;
 }
 
 class AnimatonStep {
@@ -186,7 +186,7 @@ class AnimationListItem extends React.Component<{ item: Animation, selected?: bo
 }
 
 
-class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void }> {
+class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void }> {
   render() {
     let res: Polygon = { ...this.props.item };
     return (
@@ -219,16 +219,19 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
             res.animation = v.target.value;
             this.props.submit(res);
           }}>
+          <option value=''>none</option>
             {this.props.animations.map(a => <option value={a.id}>{a.name}</option>)}
           </select>
         </HorizontalSB>
         <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal>
+
+        <button onClick={() => this.props.delete(this.props.item.id)}>Delete</button>
       </Vertical>
     );
   }
 }
 
-class AnimationFullItem extends React.Component<{ item: Animation, submit: (item: Animation) => void }> {
+class AnimationFullItem extends React.Component<{ item: Animation, submit: (item: Animation) => void, delete: (id: string) => void }> {
 
   render() {
     let res: Animation = { ...this.props.item };
@@ -284,6 +287,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
             </Vertical>
           </Vertical>
         ))}
+        <button onClick={() => this.props.delete(this.props.item.id)}>Delete</button>
       </Vertical>
     );
   }
@@ -338,13 +342,12 @@ const animation = (anims: Animation[], polygons: Polygon[]) => {
   let animation: any = {};
 
   for (let p of polygons) {
-    if (p.animation) {
+    if (p.animation && animations[p.animation]) {
       animation['& #' + p.id] = {
         animation: `${animationsKeyframes[p.animation]} ${animations[p.animation].time}s infinite`
       }
     }
   }
-  console.warn(animation);
 
   return animation;
 
@@ -429,7 +432,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                     name: 'polygon',
                     points: [200, 200, 400, 200, 400, 400, 200, 400],
                     fill: '03FF00',
-                    animation: 'animation_1'
                   })
                   this.setState({
                     polygons: this.state.polygons,
@@ -448,8 +450,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             <Horizontal onClick={() => this.switchFlag('animate')}><input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
           </Vertical>
         </SideBar>
-        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
-        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({polygons: this.state.polygons.filter(p => p.id !== toDelete)})} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} delete={toDelete => this.setState({animations: this.state.animations.filter(p => p.id !== toDelete)})} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <div style={{ flexGrow: 1 }} >
           <StyledScene blur={this.state.blur} animation={this.state.animate ? animation(this.state.animations, this.state.polygons) : undefined}>
             {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle)}
