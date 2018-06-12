@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as glamor from 'glamor';
-import Glamorous from 'glamorous';
+import Glamorous, { Time } from 'glamorous';
 import { isUndefined } from 'util';
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any }>((props) => ({
@@ -55,12 +55,15 @@ const SidebarList = Glamorous.div({
   flexDirection: 'column',
   justifyContent: 'start',
   flexGrow: 1,
-  background: '#efefef'
+  flexShrink: 0,
+  maxHeight: 'calc(100%  - 150px)',
+  background: '#efefef',
+  overflowY: 'scroll'
 });
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
   padding: 10,
-  height: 48,
+  minHeight: 48,
   display: 'flex',
   backgroundColor: props.selected ? '#e5e5e5' : undefined,
   justifyContent: 'space-between',
@@ -393,12 +396,57 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                 selectedA: id
               })
             }} selected={this.state.selectedA === p.id} />)}
+            <Horizontal>
+              <button onClick={() => {
+                if (this.state.tab === 'animations') {
+                  let id = 'animation_' + new Date().getMilliseconds();
+                  this.state.animations.push({
+                    id: id,
+                    name: 'animation',
+                    steps: [{
+                      timing: 0,
+                      opacity: 0,
+                    },
+                    {
+                      timing: 50,
+                      opacity: 1,
+                    },
+                    {
+                      timing: 100,
+                      opacity: 0,
+                    }],
+                    time: 5
+                  })
+                  this.setState({
+                    animations: this.state.animations,
+                    selectedA: id,
+                  })
+                }
+                if (this.state.tab === 'polygons') {
+                  let id = 'polygon_' + new Date().getMilliseconds();
+                  this.state.polygons.push({
+                    id: id,
+                    name: 'polygon',
+                    points: [200, 200, 400, 200, 400, 400, 200, 400],
+                    fill: '03FF00',
+                    animation: 'animation_1'
+                  })
+                  this.setState({
+                    polygons: this.state.polygons,
+                    selectedP: id,
+                  })
+                }
+
+              }}>Add</button>
+            </Horizontal>
           </SidebarList>
-          <Horizontal onClick={() => this.switchFlag('blur')}><input key="blur" type="checkbox" checked={this.state.blur} onChange={() => { }} /> blur </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('fill')}><input key="fill" type="checkbox" checked={this.state.fill} onChange={() => { }} /> fill </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('border')}><input key="border" type="checkbox" checked={this.state.border} onChange={() => { }} /> scene bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('middle')}><input key="middle" type="checkbox" checked={this.state.middle} onChange={() => { }} /> middle bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('animate')}><input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
+          <Vertical >
+            <Horizontal onClick={() => this.switchFlag('blur')}><input key="blur" type="checkbox" checked={this.state.blur} onChange={() => { }} /> blur </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('fill')}><input key="fill" type="checkbox" checked={this.state.fill} onChange={() => { }} /> fill </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('border')}><input key="border" type="checkbox" checked={this.state.border} onChange={() => { }} /> scene bounds </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('middle')}><input key="middle" type="checkbox" checked={this.state.middle} onChange={() => { }} /> middle bounds </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('animate')}><input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
+          </Vertical>
         </SideBar>
         {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
         {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
