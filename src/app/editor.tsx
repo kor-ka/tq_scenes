@@ -3,13 +3,11 @@ import * as glamor from 'glamor';
 import Glamorous from 'glamorous';
 import { isUndefined } from 'util';
 
-const StyledScene = Glamorous.div<{ blur: boolean, animation: any }>((props) => ({
+const StyledScene = Glamorous.div<{ blur: boolean, animation?: any }>((props) => ({
   display: 'flex',
-  flexGrow: 1,
   transform: props.blur ? 'scale(1.2) translate3d(0, 0, 0) translateZ(0)' : 'translate3d(0, 0, 0) translateZ(0)',
   filter: props.blur ? 'blur(25px)' : undefined,
-  border: 1,
-  ...props.animation
+  ...(props.animation || {})
 }));
 
 const Horizontal = Glamorous.div<{ width?: any, zIndex?: number }>(props => ({
@@ -17,7 +15,7 @@ const Horizontal = Glamorous.div<{ width?: any, zIndex?: number }>(props => ({
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'start',
-  padding: 10,
+  padding: 5,
   zIndex: props.zIndex
 }));
 
@@ -26,7 +24,7 @@ const Vertical = Glamorous.div<{ width?: any, zIndex?: number }>(props => ({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'start',
-  padding: 10,
+  padding: 5,
   zIndex: props.zIndex
 }));
 
@@ -40,7 +38,7 @@ const Root = Glamorous.div({
 });
 
 const SideBar = Glamorous.div({
-  width: '10%',
+  width: '20%',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'start',
@@ -57,10 +55,11 @@ const SidebarList = Glamorous.div({
 });
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
-  padding: 20,
+  padding: 10,
+  height: 48,
   display: 'flex',
   backgroundColor: props.selected ? '#e5e5e5' : undefined,
-  justifyContent: 'center',
+  justifyContent: 'space-between',
   ':hover': {
     background: '#dedede'
   }
@@ -146,7 +145,12 @@ class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boole
   render() {
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        {this.props.item.name}
+        <div>{this.props.item.name}</div>
+        <div style={{ height: 48, width: 48, borderStyle: 'solid' , borderWidth: 1, borderColor: '#cccccc'}}>
+          <StyledScene blur={false} >
+            {polygonsToSvg([this.props.item], false, true)}
+          </StyledScene>
+        </div>
       </SidebarListItemStyled>
     );
   }
@@ -209,6 +213,21 @@ class EditorState {
   animations: Animation[];
 }
 
+const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean) => {
+  console.warn(this.state);
+
+
+  return (
+    <svg height="100%" width="100%" viewBox="0 0 600 600" {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
+      {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
+      {polygons.map(polygon =>
+        <polygon key={polygon.id} id={polygon.id} fill={"#" + polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
+      )}
+      {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
+      {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
+    </svg>)
+}
+
 export class SceneEditor extends React.Component<{}, EditorState> {
   constructor(props: EditorState) {
     super(props);
@@ -243,7 +262,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     let animation: any = {};
 
     for (let p of this.state.polygons) {
-      if(p.animation){
+      if (p.animation) {
         animation['& #' + p.id] = {
           animation: `${animationsKeyframes[p.animation]} ${animations[p.animation].time}s infinite`
         }
@@ -255,20 +274,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
   }
 
-  polygonsToSvg = () => {
-    console.warn(this.state);
 
-
-    return (
-      <svg height="100%" width="100%" viewBox="0 0 600 600" {...(this.state.fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
-        {this.state.border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
-        {this.state.polygons.map(polygon =>
-          <polygon key={polygon.id} id={polygon.id} fill={"#" + polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
-        )}
-        {this.state.middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
-        {this.state.middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
-      </svg>)
-  }
 
 
   render() {
@@ -303,11 +309,14 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         </SideBar>
         {this.state.tab === 'polygons' && selectedP && <PolygonFullItem item={selectedP} submit={() => { }} />}
         {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} submit={() => { }} />}
-        <StyledScene blur={this.state.blur} animation={this.animation()}>
-          {this.polygonsToSvg()}
-        </StyledScene>
+        <div style={{ flexGrow: 1 }} >
+          <StyledScene blur={this.state.blur} animation={this.animation()}>
+            {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle)}
+          </StyledScene>
+        </div>
 
-      </Root>
+
+      </Root >
     );
   }
 }
