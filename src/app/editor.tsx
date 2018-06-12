@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as glamor from 'glamor';
 import Glamorous, { Time } from 'glamorous';
-import { isUndefined } from 'util';
+import { SketchPicker, AlphaPicker } from 'react-color';
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any }>((props) => ({
   display: 'flex',
@@ -10,17 +10,23 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any }>((props) =>
   ...(props.animation || {})
 }));
 
+
+
 const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'row',
   justifyContent: props.justifyContent || 'start',
-  padding: 5,
-  zIndex: props.zIndex
+  marginBottom: 10,
+  zIndex: props.zIndex,
+  flexShrink: 0,
 }));
 
-const HorizontalSB = Glamorous(Horizontal)({
-  justifyContent: 'space-between'
+const Field = Glamorous(Horizontal)({
+  flexShrink: 0,
+
+  justifyContent: 'space-between',
+  margin: 10
 });
 
 const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
@@ -28,8 +34,9 @@ const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: 
   display: 'flex',
   flexDirection: 'column',
   justifyContent: props.justifyContent || 'start',
-  padding: 5,
-  zIndex: props.zIndex
+  marginBottom: 10,
+  zIndex: props.zIndex,
+  flexShrink: 0,
 }));
 
 const Root = Glamorous.div({
@@ -56,9 +63,9 @@ const SidebarList = Glamorous.div({
   justifyContent: 'start',
   flexGrow: 1,
   flexShrink: 0,
+  overflowY: 'scroll',
   maxHeight: 'calc(100%  - 150px)',
   background: '#efefef',
-  overflowY: 'scroll'
 });
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
@@ -97,7 +104,7 @@ const polygonItem = {
   id: 'polygon_1',
   name: 'polygon42',
   points: [0, 0, 500, 0, 450, 350],
-  fill: '0365B7',
+  fill: '#0365B7',
   animation: 'animation_2'
 };
 
@@ -106,7 +113,7 @@ const polygonItem2 = {
   id: 'polygon_2',
   name: 'just polygon',
   points: [500, 200, 100, 200, 300, 410],
-  fill: '03FF00',
+  fill: '#03FF00',
   animation: 'animation_1'
 };
 
@@ -186,46 +193,59 @@ class AnimationListItem extends React.Component<{ item: Animation, selected?: bo
 }
 
 
+function hexToR(h) { return parseInt((cutHex(h)).substring(0, 2), 16) }
+function hexToG(h) { return parseInt((cutHex(h)).substring(2, 4), 16) }
+function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
+function cutHex(h) { return (h.charAt(0) == "#") ? h.substring(1, 7) : h }
+
 class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void }> {
   render() {
     let res: Polygon = { ...this.props.item };
     return (
       <Vertical width="20%">
-        <HorizontalSB>
+        <Field>
           name:
                 <input value={res.name} onChange={(v) => {
             res.name = v.target.value;
             this.props.submit(res)
           }} />
-        </HorizontalSB>
-        <HorizontalSB>
+        </Field>
+        <Field>
           fill:
-                <input value={res.fill === undefined ? '' : res.fill} onChange={(v) => {
-            res.fill = v.target.value === '' ? undefined : v.target.value;
-            this.props.submit(res)
-          }} />
-        </HorizontalSB>
-        <HorizontalSB>
-          opacity:
-                <input value={res.opacity === undefined ? '' : res.opacity} onChange={(v) => {
-            res.opacity = v.target.value === '' ? undefined : Number(v.target.value);
-            this.props.submit(res)
-          }} />
-        </HorizontalSB>
 
-        <HorizontalSB>
+          <SketchPicker
+            color={res.fill}
+            onChangeComplete={c => {
+              res.fill = c.hex;
+              this.props.submit(res)
+            }}
+          />
+        </Field>
+        <Field>
+          opacity:
+
+          <AlphaPicker
+            color={{ r: hexToR(res.fill), g: hexToG(res.fill), b: hexToB(res.fill), a: res.opacity }}
+            onChangeComplete={c => {
+              res.opacity = c.hsl.a;
+              this.props.submit(res)
+            }}
+          />
+        </Field>
+
+        <Field>
           animation:
           <select value={this.props.item.animation} onChange={v => {
             res.animation = v.target.value;
             this.props.submit(res);
           }}>
-          <option value=''>none</option>
+            <option value=''>none</option>
             {this.props.animations.map(a => <option value={a.id}>{a.name}</option>)}
           </select>
-        </HorizontalSB>
+        </Field>
         <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal>
 
-        <button onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</button>
+        <button style={{ alignSelf: 'flex-end' }} onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</button>
       </Vertical>
     );
   }
@@ -236,58 +256,86 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
   render() {
     let res: Animation = { ...this.props.item };
     return (
-      <Vertical width="20%">
-        <HorizontalSB>
+      <Vertical width="20%" style={{
+        paddingLeft: 5,
+        flexShrink: 0,
+        overflowY: 'scroll',
+        maxHeight: '100%',
+      }}>
+        <Field>
           name:
            <input value={this.props.item.name} onChange={(v) => {
             res.name = v.target.value
             this.props.submit(res)
           }} />
-        </HorizontalSB>
+        </Field>
 
-        <HorizontalSB>
+        <Field>
           time:
            <input value={this.props.item.time} onChange={(v) => {
             res.time = Number(v.target.value) || 0;
             this.props.submit(res)
           }} />
-        </HorizontalSB>
+        </Field>
 
-        <HorizontalSB> steps: </HorizontalSB>
-        {this.props.item.steps.map((s, k) => (
-          <Vertical key={k} >
-            <HorizontalSB>
+        <Field> STEPS: </Field>
+        {this.props.item.steps.map((step, k) => (
+          <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: '#cccccc' }}>
+            <Field>
               timing:
-              <input value={res.steps[k].timing} onChange={(v) => {
-                res.steps[k].timing = Number(v.target.value) || 0;
+              <input value={step.timing} onChange={(v) => {
+                step.timing = Number(v.target.value) || 0;
                 this.props.submit(res)
               }} />
-            </HorizontalSB>
-            <HorizontalSB>
+            </Field>
+            <Field>
               opacity:
-                <input value={res.steps[k].opacity === undefined ? '' : res.steps[k].opacity} onChange={(v) => {
-                res.steps[k].opacity = v.target.value === '' ? undefined : Number(v.target.value);
+                <input value={step.opacity === undefined ? '' : step.opacity} onChange={(v) => {
+                step.opacity = v.target.value === '' ? undefined : Number(v.target.value);
                 this.props.submit(res)
               }} />
-            </HorizontalSB>
+            </Field>
             <Vertical>
-              translate
-                <HorizontalSB>
-                x: <input value={res.steps[k].translate === undefined ? '' : res.steps[k].translate.x} onChange={(v) => {
-                  res.steps[k].translate = { x: v.target.value === '' ? undefined : Number(v.target.value), y: res.steps[k].translate ? res.steps[k].translate.y : undefined }
+              <Field>
+                x: <input value={step.translate === undefined ? '' : step.translate.x} onChange={(v) => {
+                  step.translate = { x: v.target.value === '' ? undefined : Number(v.target.value), y: step.translate ? step.translate.y : undefined }
                   this.props.submit(res)
                 }} />
-              </HorizontalSB>
-              <HorizontalSB>
-                y: <input value={res.steps[k].translate === undefined ? '' : res.steps[k].translate.y} onChange={(v) => {
-                  res.steps[k].translate = { y: v.target.value === '' ? undefined : Number(v.target.value), x: res.steps[k].translate ? res.steps[k].translate.x : undefined }
+              </Field>
+              <Field>
+                y: <input value={step.translate === undefined ? '' : step.translate.y} onChange={(v) => {
+                  step.translate = { y: v.target.value === '' ? undefined : Number(v.target.value), x: step.translate ? step.translate.x : undefined }
                   this.props.submit(res)
                 }} />
-              </HorizontalSB>
+              </Field>
+              <Horizontal style={{marginBottom: 0}}>
+                <button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                  res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
+                  this.props.submit(res)
+                }} disabled={k === 0}> Up </button>
+                <button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                  res.steps.splice(k + 1, 0, res.steps.splice(k, 1)[0])
+                  this.props.submit(res)
+                }} disabled={k === res.steps.length - 1}> Down </button>
+                <button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                  res.steps.splice(k, 1)
+                  this.props.submit(res)
+                }}> Delete </button>
+              </Horizontal>
+
             </Vertical>
           </Vertical>
         ))}
-        <button onClick={() => this.props.delete(this.props.item.id)}>Delete animation</button>
+        <button onClick={() => {
+          res.steps.push({
+            timing: 50,
+            opacity: 1
+          })
+          this.props.submit(res)
+        }}> + </button>
+
+        <button style={{ marginTop: 100 }} onClick={() => this.props.delete(this.props.item.id)}>Delete animation</button>
+
       </Vertical>
     );
   }
@@ -315,7 +363,7 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
     <svg height="100%" width="100%" viewBox="0 0 600 600" {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
       {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
       {polygons.map(polygon =>
-        <polygon key={polygon.id} id={polygon.id} fill={"#" + polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
+        <polygon key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
       )}
       {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
       {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'gray', strokeWidth: 1, opacity: 0.5 }} />}
@@ -381,9 +429,9 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
     return (
       <Root>
-        <Vertical>
-          <button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'}>P</button>
-          <button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'}>A</button>
+        <Vertical style={{ padding: 10 }} >
+          <Vertical ><button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'}>P</button></Vertical >
+          <Vertical ><button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'}>A</button></Vertical >
         </Vertical>
         <SideBar>
 
@@ -399,8 +447,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                 selectedA: id
               })
             }} selected={this.state.selectedA === p.id} />)}
-            <Horizontal>
-              <button onClick={() => {
+            <Vertical>
+              <button style={{ margin: 10 }} onClick={() => {
                 if (this.state.tab === 'animations') {
                   let id = 'animation_' + new Date().getMilliseconds();
                   this.state.animations.push({
@@ -431,7 +479,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                     id: id,
                     name: 'polygon',
                     points: [200, 200, 400, 200, 400, 400, 200, 400],
-                    fill: '03FF00',
+                    fill: '#03FF00',
                   })
                   this.setState({
                     polygons: this.state.polygons,
@@ -439,8 +487,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                   })
                 }
 
-              }}>Add</button>
-            </Horizontal>
+              }}>+</button>
+            </Vertical>
           </SidebarList>
           <Vertical >
             <Horizontal onClick={() => this.switchFlag('blur')}><input key="blur" type="checkbox" checked={this.state.blur} onChange={() => { }} /> blur </Horizontal>
@@ -450,8 +498,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             <Horizontal onClick={() => this.switchFlag('animate')}><input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
           </Vertical>
         </SideBar>
-        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({polygons: this.state.polygons.filter(p => p.id !== toDelete)})} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
-        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} delete={toDelete => this.setState({animations: this.state.animations.filter(p => p.id !== toDelete)})} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <div style={{ flexGrow: 1 }} >
           <StyledScene blur={this.state.blur} animation={this.state.animate ? animation(this.state.animations, this.state.polygons) : undefined}>
             {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle)}
