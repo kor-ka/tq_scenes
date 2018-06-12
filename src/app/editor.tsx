@@ -10,20 +10,24 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any }>((props) =>
   ...(props.animation || {})
 }));
 
-const Horizontal = Glamorous.div<{ width?: any, zIndex?: number }>(props => ({
+const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'row',
-  justifyContent: 'start',
+  justifyContent: props.justifyContent || 'start',
   padding: 5,
   zIndex: props.zIndex
 }));
 
-const Vertical = Glamorous.div<{ width?: any, zIndex?: number }>(props => ({
+const HorizontalSB = Glamorous(Horizontal)({
+  justifyContent: 'space-between'
+});
+
+const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'start',
+  justifyContent: props.justifyContent || 'start',
   padding: 5,
   zIndex: props.zIndex
 }));
@@ -38,7 +42,7 @@ const Root = Glamorous.div({
 });
 
 const SideBar = Glamorous.div({
-  width: '20%',
+  width: '10%',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'start',
@@ -77,7 +81,7 @@ class Polygon {
 class AnimatonStep {
   timing: number;
   opacity?: number;
-  translate?: { x: string, y: string }
+  translate?: { x: number, y: number }
 }
 class Animation {
   id: string;
@@ -126,15 +130,15 @@ const move = {
   name: 'move',
   steps: [{
     timing: 0,
-    translate: { x: '0%', y: '0%' }
+    translate: { x: 0, y: 0 }
   },
   {
     timing: 50,
-    translate: { x: '10%', y: '-10%' }
+    translate: { x: 10, y: -10 }
   },
   {
     timing: 100,
-    translate: { x: '0%', y: '0%' }
+    translate: { x: 0, y: 0 }
   }],
   time: 5
 };
@@ -145,8 +149,8 @@ class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boole
   render() {
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        <div>{this.props.item.name}</div>
-        <div style={{ height: 48, width: 48, borderStyle: 'solid' , borderWidth: 1, borderColor: '#cccccc'}}>
+        <div style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>{this.props.item.name}</div>
+        <div style={{ height: 48, width: 48, borderStyle: 'solid', borderWidth: 1, borderColor: '#cccccc' }}>
           <StyledScene blur={false} >
             {polygonsToSvg([this.props.item], false, true)}
           </StyledScene>
@@ -158,40 +162,123 @@ class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boole
 
 class AnimationListItem extends React.Component<{ item: Animation, selected?: boolean, onClick: (id: string) => void }> {
   render() {
+    let p = {
+      id: 'polygon_1',
+      name: 'polygon42',
+      points: [200, 200, 400, 200, 400, 400, 200, 400],
+      fill: '0365B7',
+      animation: this.props.item.id,
+    }
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        {this.props.item.name}
+        <div style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>{this.props.item.name}</div>
+        <div style={{ height: 48, width: 48, borderStyle: 'solid', borderWidth: 1, borderColor: '#cccccc' }}>
+          <StyledScene blur={false} animation={animation([this.props.item], [p])}>
+            {polygonsToSvg([p], false, true)}
+          </StyledScene>
+        </div>
       </SidebarListItemStyled>
     );
   }
 }
 
 
-class PolygonFullItem extends React.Component<{ item: Polygon, submit: (item: Polygon) => void }> {
+class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void }> {
   render() {
+    let res: Polygon = { ...this.props.item };
     return (
       <Vertical width="20%">
-        <div>name: {this.props.item.name}</div>
-        <div>fill: {this.props.item.fill}</div>
-        <div>opacity: {this.props.item.opacity}</div>
-        <div>path: {this.props.item.points.join(" ")}</div>
+        <HorizontalSB>
+          name:
+                <input value={res.name} onChange={(v) => {
+            res.name = v.target.value;
+            this.props.submit(res)
+          }} />
+        </HorizontalSB>
+        <HorizontalSB>
+          fill:
+                <input value={res.fill === undefined ? '' : res.fill} onChange={(v) => {
+            res.fill = v.target.value === '' ? undefined : v.target.value;
+            this.props.submit(res)
+          }} />
+        </HorizontalSB>
+        <HorizontalSB>
+          opacity:
+                <input value={res.opacity === undefined ? '' : res.opacity} onChange={(v) => {
+            res.opacity = v.target.value === '' ? undefined : Number(v.target.value);
+            this.props.submit(res)
+          }} />
+        </HorizontalSB>
+
+        <HorizontalSB>
+          animation:
+          <select value={this.props.item.animation} onChange={v => {
+            res.animation = v.target.value;
+            this.props.submit(res);
+          }}>
+            {this.props.animations.map(a => <option value={a.id}>{a.name}</option>)}
+          </select>
+        </HorizontalSB>
+        <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal>
       </Vertical>
     );
   }
 }
 
-class AnimationFullItem extends React.Component<{ item: Animation, selected?: boolean, submit: (item: Animation) => void }> {
+class AnimationFullItem extends React.Component<{ item: Animation, submit: (item: Animation) => void }> {
+
   render() {
+    let res: Animation = { ...this.props.item };
     return (
       <Vertical width="20%">
-        <div>name: {this.props.item.name}</div>
-        <div>time: {this.props.item.time}</div>
-        <div>steps: </div>
+        <HorizontalSB>
+          name:
+           <input value={this.props.item.name} onChange={(v) => {
+            res.name = v.target.value
+            this.props.submit(res)
+          }} />
+        </HorizontalSB>
+
+        <HorizontalSB>
+          time:
+           <input value={this.props.item.time} onChange={(v) => {
+            res.time = Number(v.target.value) || 0;
+            this.props.submit(res)
+          }} />
+        </HorizontalSB>
+
+        <HorizontalSB> steps: </HorizontalSB>
         {this.props.item.steps.map((s, k) => (
           <Vertical key={k} >
-            <div>    timing: {s.timing}</div>
-            {s.opacity !== undefined && <div>    opacity: {s.opacity}</div>}
-            {s.translate && <div>    translate: {'x: ' + s.translate.x + ' y: ' + s.translate.y}</div>}
+            <HorizontalSB>
+              timing:
+              <input value={res.steps[k].timing} onChange={(v) => {
+                res.steps[k].timing = Number(v.target.value) || 0;
+                this.props.submit(res)
+              }} />
+            </HorizontalSB>
+            <HorizontalSB>
+              opacity:
+                <input value={res.steps[k].opacity === undefined ? '' : res.steps[k].opacity} onChange={(v) => {
+                res.steps[k].opacity = v.target.value === '' ? undefined : Number(v.target.value);
+                this.props.submit(res)
+              }} />
+            </HorizontalSB>
+            <Vertical>
+              translate
+                <HorizontalSB>
+                x: <input value={res.steps[k].translate === undefined ? '' : res.steps[k].translate.x} onChange={(v) => {
+                  res.steps[k].translate = { x: v.target.value === '' ? undefined : Number(v.target.value), y: res.steps[k].translate ? res.steps[k].translate.y : undefined }
+                  this.props.submit(res)
+                }} />
+              </HorizontalSB>
+              <HorizontalSB>
+                y: <input value={res.steps[k].translate === undefined ? '' : res.steps[k].translate.y} onChange={(v) => {
+                  res.steps[k].translate = { y: v.target.value === '' ? undefined : Number(v.target.value), x: res.steps[k].translate ? res.steps[k].translate.x : undefined }
+                  this.props.submit(res)
+                }} />
+              </HorizontalSB>
+            </Vertical>
           </Vertical>
         ))}
       </Vertical>
@@ -205,6 +292,7 @@ class EditorState {
   tab: 'polygons' | 'animations';
   blur?: boolean
   fill?: boolean
+  animate: boolean
   border: boolean
   middle?: boolean
   selectedP?: string;
@@ -215,7 +303,6 @@ class EditorState {
 
 const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean) => {
   console.warn(this.state);
-
 
   return (
     <svg height="100%" width="100%" viewBox="0 0 600 600" {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
@@ -228,12 +315,52 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
     </svg>)
 }
 
+const animation = (anims: Animation[], polygons: Polygon[]) => {
+  let animationsKeyframes: any = {};
+  let animations: any = {};
+  for (let a of anims) {
+    let keyframes: any = {}
+    for (let s of a.steps) {
+      keyframes[s.timing + "%"] = {
+        opacity: s.opacity,
+        transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y + '%, 0)' : undefined,
+      }
+    }
+    animationsKeyframes[a.id] = glamor.keyframes({
+      ...keyframes
+    });
+    animations[a.id] = a
+  }
+
+  let animation: any = {};
+
+  for (let p of polygons) {
+    if (p.animation) {
+      animation['& #' + p.id] = {
+        animation: `${animationsKeyframes[p.animation]} ${animations[p.animation].time}s infinite`
+      }
+    }
+  }
+  console.warn(animation);
+
+  return animation;
+
+}
+
 export class SceneEditor extends React.Component<{}, EditorState> {
   constructor(props: EditorState) {
     super(props);
     let polygons = [polygonItem, polygonItem2];
     let animations = [glow, move];
-    this.state = { tab: 'polygons', polygons: polygons, border: true, animations: animations, selectedP: polygons.length > 0 ? polygons[0].id : undefined, selectedA: animations.length > 0 ? animations[0].id : undefined };
+    this.state = {
+      tab: 'polygons',
+      polygons: polygons,
+      border: true,
+      animations: animations,
+      selectedP: polygons.length > 0 ? polygons[0].id : undefined,
+      selectedA: animations.length > 0 ? animations[0].id : undefined,
+      animate: true
+    };
   }
 
   switchFlag(key: string) {
@@ -241,41 +368,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     state[key] = !this.state[key];
     this.setState(state);
   }
-
-  animation = () => {
-    let animationsKeyframes: any = {};
-    let animations: any = {};
-    for (let a of this.state.animations) {
-      let keyframes: any = {}
-      for (let s of a.steps) {
-        keyframes[s.timing + "%"] = {
-          opacity: s.opacity,
-          transform: s.translate ? 'translate3d(' + s.translate.x + ', ' + s.translate.y + ', 0)' : undefined,
-        }
-      }
-      animationsKeyframes[a.id] = glamor.keyframes({
-        ...keyframes
-      });
-      animations[a.id] = a
-    }
-
-    let animation: any = {};
-
-    for (let p of this.state.polygons) {
-      if (p.animation) {
-        animation['& #' + p.id] = {
-          animation: `${animationsKeyframes[p.animation]} ${animations[p.animation].time}s infinite`
-        }
-      }
-    }
-    console.warn(animation);
-
-    return animation;
-
-  }
-
-
-
 
   render() {
     let selectedP = this.state.polygons.filter(p => p.id === this.state.selectedP)[0];
@@ -290,13 +382,13 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         <SideBar>
 
           <SidebarList>
-            {this.state.tab === 'polygons' && this.state.polygons.map(p => <PolygonsListItem key={p.name} item={{ ...p }} onClick={id => {
+            {this.state.tab === 'polygons' && this.state.polygons.map(p => <PolygonsListItem key={p.name} item={p} onClick={id => {
               this.setState({
                 selectedP: id
               })
             }} selected={this.state.selectedP === p.id} />)}
 
-            {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.name} item={{ ...p }} onClick={id => {
+            {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.name} item={p} onClick={id => {
               this.setState({
                 selectedA: id
               })
@@ -306,11 +398,12 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <Horizontal onClick={() => this.switchFlag('fill')}><input key="fill" type="checkbox" checked={this.state.fill} onChange={() => { }} /> fill </Horizontal>
           <Horizontal onClick={() => this.switchFlag('border')}><input key="border" type="checkbox" checked={this.state.border} onChange={() => { }} /> scene bounds </Horizontal>
           <Horizontal onClick={() => this.switchFlag('middle')}><input key="middle" type="checkbox" checked={this.state.middle} onChange={() => { }} /> middle bounds </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('animate')}><input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
         </SideBar>
-        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem item={selectedP} submit={() => { }} />}
-        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} submit={() => { }} />}
+        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <div style={{ flexGrow: 1 }} >
-          <StyledScene blur={this.state.blur} animation={this.animation()}>
+          <StyledScene blur={this.state.blur} animation={this.state.animate ? animation(this.state.animations, this.state.polygons) : undefined}>
             {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle)}
           </StyledScene>
         </div>
