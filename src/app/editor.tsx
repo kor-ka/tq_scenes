@@ -192,11 +192,24 @@ const move = {
 
 
 
-class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boolean, onClick: (id: string) => void }> {
+class PolygonsListItem extends React.Component<{ item: Polygon, index: number, isLast: boolean, selected?: boolean, onClick: (id: string) => void, move(id: string, from: number, to: number) }> {
   render() {
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        <div style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>{this.props.item.name}</div>
+        <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>
+          <div>{this.props.item.name}</div>
+
+          <Horizontal style={{marginBottom: 0, marginTop: 5}}>
+            <Button style={{ marginRight: 5 }} onClick={() => {
+              this.props.move(this.props.item.id, this.props.index, this.props.index - 1);
+            }} disabled={this.props.index === 0}> Up </Button>
+            <Button style={{ marginRight: 5 }} onClick={() => {
+
+              this.props.move(this.props.item.id, this.props.index, this.props.index + 1);
+            }} disabled={this.props.isLast}> Down </Button>
+
+          </Horizontal>
+        </Vertical>
         <div style={{ height: 48, width: 48 }}>
           <StyledScene blur={false} grid={true}>
             {polygonsToSvg([this.props.item], false, true)}
@@ -415,18 +428,20 @@ class EditorState {
 
 const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean) => {
   console.warn(this.state);
+  let polygonsReversed = [...polygons].reverse();
 
   return (
+
     <svg height="100%" width="100%" viewBox="0 0 600 600" {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
       {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {border && <rect key='border1' id='border' x="1" y="1" width="598" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
-      {polygons.map(polygon =>
+      {polygonsReversed.map(polygon =>
         <polygon key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
       )}
-      {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1}} />}
-      {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'black', strokeWidth: 1}} />}
-      {middle && <rect key='middlev1' id='middlev' x="201" y="1" width="198" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1}} />}
-      {middle && <rect key='middleh2' id='middleh' x="1" y="201" width="598" height="198" fill="none" style={{ stroke: 'white', strokeWidth: 1}} />}
+      {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
+      {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
+      {middle && <rect key='middlev1' id='middlev' x="201" y="1" width="198" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
+      {middle && <rect key='middleh2' id='middleh' x="1" y="201" width="598" height="198" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
     </svg>)
 }
 
@@ -497,11 +512,25 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         <SideBar>
 
           <SidebarList>
-            {this.state.tab === 'polygons' && this.state.polygons.map(p => <PolygonsListItem key={p.name} item={p} onClick={id => {
-              this.setState({
-                selectedP: id
-              })
-            }} selected={this.state.selectedP === p.id} />)}
+            {this.state.tab === 'polygons' && this.state.polygons.map((p, i) => <PolygonsListItem
+              index={i}
+              isLast={i === this.state.polygons.length - 1}
+              move={(id, from, to) => {
+                console.warn(id, from, to)
+                let res = [...this.state.polygons]
+                res.splice(from, 0, res.splice(to, 1)[0])
+                this.setState({
+                  polygons: res
+                });
+              }}
+              key={p.name}
+              item={p}
+              onClick={id => {
+                this.setState({
+                  selectedP: id
+                })
+              }}
+              selected={this.state.selectedP === p.id} />)}
 
             {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.name} item={p} onClick={id => {
               this.setState({
