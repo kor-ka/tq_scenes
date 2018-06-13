@@ -17,17 +17,18 @@ const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => (
   color: props.color || 'blue',
   borderStyle: 'solid',
   borderWidth: 1,
+  backgroundColor: 'transparent',
   borderColor: props.color || 'blue',
   borderRadius: 8,
   minHeight: 24,
   ':hover': {
     backgroundColor: props.color || 'blue',
     color: 'white',
-    opacity: 0.7
   },
   ':disabled': {
     cursor: 'default',
     backgroundColor: 'gray',
+    opacity: 0.7,
     color: 'white',
     borderColor: 'gray',
     ...(props.active ? {
@@ -54,16 +55,24 @@ const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?
   display: 'flex',
   flexDirection: 'row',
   justifyContent: props.justifyContent || 'start',
-  marginBottom: 10,
   zIndex: props.zIndex,
   flexShrink: 0,
+  '> *': {
+    marginLeft: 8,
+    marginRight: 8
+  },
+  '>:first-child': {
+    marginLeft: 0,
+  },
+  '>:last-child': {
+    marginRight: 0,
+  }
 }));
 
 const Field = Glamorous(Horizontal)({
   flexShrink: 0,
   alignItems: 'center',
   justifyContent: 'space-between',
-  margin: 10
 });
 
 const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
@@ -71,9 +80,18 @@ const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: 
   display: 'flex',
   flexDirection: 'column',
   justifyContent: props.justifyContent || 'start',
-  marginBottom: 10,
   zIndex: props.zIndex,
   flexShrink: 0,
+  '> *': {
+    marginTop: 8,
+    marginBottom: 8
+  },
+  '>:first-child': {
+    marginTop: 0,
+  },
+  '>:last-child': {
+    marginBottom: 0,
+  }
 }));
 
 const Root = Glamorous.div({
@@ -86,7 +104,7 @@ const Root = Glamorous.div({
 });
 
 const SideBar = Glamorous.div({
-  width: '10%',
+  width: 170,
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'start',
@@ -107,10 +125,11 @@ const SidebarList = Glamorous.div({
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
   padding: 10,
-  minHeight: 48,
+  minHeight: 58,
   display: 'flex',
   backgroundColor: props.selected ? '#e5e5e5' : undefined,
   justifyContent: 'space-between',
+  alignItems: 'center',
   ':hover': {
     background: '#dedede'
   }
@@ -196,14 +215,14 @@ class PolygonsListItem extends React.Component<{ item: Polygon, index: number, i
   render() {
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>
+        <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }} >
           <div>{this.props.item.name}</div>
 
-          <Horizontal style={{marginBottom: 0, marginTop: 5}}>
-            <Button style={{ marginRight: 5 }} onClick={() => {
+          <Horizontal>
+            <Button onClick={() => {
               this.props.move(this.props.item.id, this.props.index, this.props.index - 1);
             }} disabled={this.props.index === 0}> Up </Button>
-            <Button style={{ marginRight: 5 }} onClick={() => {
+            <Button onClick={() => {
 
               this.props.move(this.props.item.id, this.props.index, this.props.index + 1);
             }} disabled={this.props.isLast}> Down </Button>
@@ -252,56 +271,41 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
   render() {
     let res: Polygon = { ...this.props.item };
     return (
-      <Vertical width="20%" style={{
-        paddingLeft: 10,
-        paddingRight: 10,
+      <Vertical style={{
+        paddingLeft: 16,
+        paddingRight: 16,
         flexShrink: 0,
+        paddingTop: 8,
         overflowY: 'scroll',
         maxHeight: '100%',
+        width: 248
       }}>
-        <Field>
-          name:
-                <Input value={res.name} onChange={(v: any) => {
-            res.name = v.target.value;
-            this.props.submit(res)
-          }} />
-        </Field>
-        <Field>
-          fill:
+        <Input value={res.name} onChange={(v: any) => {
+          res.name = v.target.value;
+          this.props.submit(res)
+        }} />
+        <div style={{ alignSelf: 'center' }}>
 
           <SketchPicker
-            color={res.fill}
-            onChangeComplete={c => {
-              res.fill = c.hex;
-              this.props.submit(res)
-            }}
-          />
-        </Field>
-        <Field>
-          opacity:
-
-          <AlphaPicker
             color={{ r: hexToR(res.fill), g: hexToG(res.fill), b: hexToB(res.fill), a: res.opacity }}
             onChangeComplete={c => {
+              res.fill = c.hex;
               res.opacity = c.hsl.a;
               this.props.submit(res)
             }}
           />
-        </Field>
+        </div>
 
-        <Field>
-          animation:
-          <select value={this.props.item.animation} onChange={v => {
-            res.animation = v.target.value;
-            this.props.submit(res);
-          }}>
-            <option value=''>none</option>
-            {this.props.animations.map(a => <option value={a.id}>{a.name}</option>)}
-          </select>
-        </Field>
+        <select style={{ height: 24 }} value={this.props.item.animation} onChange={v => {
+          res.animation = v.target.value;
+          this.props.submit(res);
+        }}>
+          <option value=''>no animtation</option>
+          {this.props.animations.map(a => <option value={a.id}>animation: {a.name}</option>)}
+        </select>
         {/* <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal> */}
 
-        <Field style={{ marginRight: 0 }}> <div></div><Button color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</Button></Field>
+        <Field > <div></div><Button color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</Button></Field>
       </Vertical>
     );
   }
@@ -312,9 +316,11 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
   render() {
     let res: Animation = { ...this.props.item };
     return (
-      <Vertical width="20%" style={{
-        paddingLeft: 10,
-        paddingRight: 10,
+      <Vertical style={{
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingTop: 8,
+        width: 248,
         flexShrink: 0,
         overflowY: 'scroll',
         maxHeight: '100%',
@@ -338,7 +344,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
         <Field> STEPS: </Field>
         {this.props.item.steps.map((step, k) => (
-          <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: 'blue', borderRadius: 8 }}>
+          <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: 'blue', borderRadius: 8, padding: 8 }}>
             <Field>
               timing:
               <Input value={step.timing} onChange={(v: any) => {
@@ -367,15 +373,15 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
                 }} />
               </Field>
               <Horizontal style={{ marginBottom: 0 }}>
-                <Button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                <Button onClick={() => {
                   res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
                   this.props.submit(res)
                 }} disabled={k === 0}> Up </Button>
-                <Button style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                <Button onClick={() => {
                   res.steps.splice(k + 1, 0, res.steps.splice(k, 1)[0])
                   this.props.submit(res)
                 }} disabled={k === res.steps.length - 1}> Down </Button>
-                <Button color='red' style={{ marginLeft: 10, marginRight: 10 }} onClick={() => {
+                <Button color='red' onClick={() => {
                   res.steps.splice(k, 1)
                   this.props.submit(res)
                 }}> Delete </Button>
@@ -523,7 +529,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                   polygons: res
                 });
               }}
-              key={p.name}
+              key={p.id}
               item={p}
               onClick={id => {
                 this.setState({
@@ -532,7 +538,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
               }}
               selected={this.state.selectedP === p.id} />)}
 
-            {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.name} item={p} onClick={id => {
+            {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.id} item={p} onClick={id => {
               this.setState({
                 selectedA: id
               })
@@ -592,12 +598,12 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           </StyledScene>
         </div>
         <Vertical style={{ padding: 10 }}>
-          <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox" checked={this.state.blur} onChange={() => { }} /> blur </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox" checked={this.state.fill} onChange={() => { }} /> fill </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox" checked={this.state.grid} onChange={() => { }} /> grid </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox" checked={this.state.border} onChange={() => { }} /> scene bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox" checked={this.state.middle} onChange={() => { }} /> middle bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" checked={this.state.animate} onChange={() => { }} /> animate </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox"  style={{marginRight: 8}} checked={this.state.blur} onChange={() => { }} />blur </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox"  style={{marginRight: 8}} checked={this.state.fill} onChange={() => { }} />fill </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox"  style={{marginRight: 8}} checked={this.state.grid} onChange={() => { }} />grid </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox"  style={{marginRight: 8}} checked={this.state.border} onChange={() => { }} />scene bounds </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox"  style={{marginRight: 8}} checked={this.state.middle} onChange={() => { }} />middle bounds </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox"  style={{marginRight: 8}} checked={this.state.animate} onChange={() => { }} />animate </Horizontal>
         </Vertical>
 
       </Root >
