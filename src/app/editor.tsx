@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as glamor from 'glamor';
-import Glamorous, { Time } from 'glamorous';
-import { SketchPicker, AlphaPicker } from 'react-color';
+import Glamorous from 'glamorous';
+import { SketchPicker } from 'react-color';
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
   backgroundImage: props.grid ? 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)' : undefined,
@@ -524,7 +524,7 @@ function applyDrag(coord) {
     dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), Math.max(0, Math.min(coord.x - offset.x, 600)), Math.max(0, Math.min(coord.y - offset.y, 600)), selectedParselId);
   } else if (selectedElement.tagName === 'polygon') {
     let newCenter = { x: coord.x - offset.x, y: coord.y - offset.y }
-    dargPolygon(selectedParselId, {x: newCenter.x, y: newCenter.y});
+    dargPolygon(selectedParselId, { x: newCenter.x, y: newCenter.y });
   }
 
 }
@@ -533,7 +533,7 @@ function endDrag(evt) {
   selectedElement = null;
 }
 
-function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: number, x: number, y: number, selected: string) => void, dargPolygonCallback: (id: string, newCenter: {x: number, y: number}) => void) {
+function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: number, x: number, y: number, selected: string) => void, dargPolygonCallback: (id: string, newCenter: { x: number, y: number }) => void) {
   svg = target;
   selectedParselId = parselId;
   dargCircle = dargCircleCallback;
@@ -587,10 +587,10 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
         newPath[id * 2 + 1] = y;
         dragCallback(selected, newPath);
       }
-    }, (selected: string, newCenter: {x: number, y: number}) => {
+    }, (selected: string, newCenter: { x: number, y: number }) => {
       let selectedPolygonPonts = polygons.filter(p => p.id === selected)[0].points;
       let oldCenter = center(flatPointsToPoints(selectedPolygonPonts));
-      let newPath = selectedPolygonPonts.map((p, i) =>  p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
+      let newPath = selectedPolygonPonts.map((p, i) => p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
       dragCallback(selected, newPath);
     })} {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
       {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
@@ -653,8 +653,12 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
 export class SceneEditor extends React.Component<{}, EditorState> {
   constructor(props: EditorState) {
     super(props);
-    let polygons = [polygonItem, polygonItem2];
-    let animations = [glow, move];
+
+    let polygons = JSON.parse(window.localStorage.getItem('polygons'))
+    console.warn(window.localStorage.getItem('polygons'));
+    polygons = polygons || [polygonItem, polygonItem2];
+    let animations = JSON.parse(window.localStorage.getItem('animations'))
+    animations = animations || [glow, move];
     this.state = {
       tab: 'polygons',
       polygons: polygons,
@@ -665,6 +669,11 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       selectedA: animations.length > 0 ? animations[0].id : undefined,
       animate: true
     };
+  }
+
+  componentDidUpdate() {
+    window.localStorage.setItem('polygons', JSON.stringify(this.state.polygons));
+    window.localStorage.setItem('animations', JSON.stringify(this.state.animations));
   }
 
   switchFlag(key: string) {
@@ -766,7 +775,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
             changed.points = newPath;
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
-            this.setState({});
           })}
         </StyledScene>
         <Vertical style={{ padding: 10, zIndex: 1 }}>
