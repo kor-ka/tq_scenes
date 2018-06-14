@@ -4008,6 +4008,10 @@ pkg-dir@^2.0.0:
   dependencies:
     find-up "^2.1.0"
 
+polygon-centroid@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/polygon-centroid/-/polygon-centroid-1.1.0.tgz#f6e2551595d8cd0dea72709db1712ae1e7a230da"
+
 portfinder@^1.0.9:
   version "1.0.13"
   resolved "https://registry.yarnpkg.com/portfinder/-/portfinder-1.0.13.tgz#bb32ecd87c27104ae6ee44b5a3ccbf0ebb1aede9"

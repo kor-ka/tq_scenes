@@ -46,8 +46,9 @@ const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => (
 const Input = Glamorous.input({
   minHeight: 24,
   outline: 0,
-  borderWidth: '0 0 1px;',
-  borderColor: 'blue'
+  borderWidth: '0 0 1px',
+  borderColor: 'blue',
+  backgroundColor: 'transparent'
 });
 
 const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
@@ -135,6 +136,19 @@ const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
   }
 }));
 
+const flatPointsToPoints = (poinst: number[]) => {
+  return poinst.reduce(
+    (prev: { x: number, y: number }[], current: number, i: number) => {
+      if (i % 2 === 0) {
+        prev.push({ x: current, y: undefined });
+      } else {
+        prev[prev.length - 1].y = current;
+      }
+      return prev;
+    },
+    [])
+}
+
 class Polygon {
   id: string;
   name: string;
@@ -159,8 +173,8 @@ class Animation {
 const polygonItem = {
   id: 'polygon_1',
   name: 'polygon42',
-  points: [0, 0, 500, 0, 450, 350],
-  fill: '#0365B7',
+  points: [100, 100, 200, 100, 200, 200, 100, 200],
+  fill: '#FF84ED',
   animation: 'animation_2'
 };
 
@@ -168,8 +182,8 @@ const polygonItem = {
 const polygonItem2 = {
   id: 'polygon_2',
   name: 'just polygon',
-  points: [500, 200, 100, 200, 300, 410],
-  fill: '#03FF00',
+  points: [200, 200, 400, 200, 400, 400, 200, 400],
+  fill: '#00FFA2',
   animation: 'animation_1'
 };
 
@@ -268,8 +282,12 @@ function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
 function cutHex(h) { return (h.charAt(0) == "#") ? h.substring(1, 7) : h }
 
 class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void }> {
+
+
   render() {
     let res: Polygon = { ...this.props.item };
+
+
     return (
       <Vertical style={{
         paddingLeft: 16,
@@ -278,7 +296,8 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
         paddingTop: 8,
         overflowY: 'scroll',
         maxHeight: '100%',
-        width: 248
+        width: 248,
+        zIndex: 1
       }}>
         <Input value={res.name} onChange={(v: any) => {
           res.name = v.target.value;
@@ -296,12 +315,12 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
           />
         </div>
 
-        <select style={{ height: 24 }} value={this.props.item.animation} onChange={v => {
+        <select style={{ height: 24 }} value={this.props.item.animation || ''} onChange={v => {
           res.animation = v.target.value;
           this.props.submit(res);
         }}>
           <option value=''>no animtation</option>
-          {this.props.animations.map(a => <option value={a.id}>animation: {a.name}</option>)}
+          {this.props.animations.map(a => <option key={a.id} value={a.id}>animation: {a.name}</option>)}
         </select>
         {/* <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal> */}
 
@@ -324,7 +343,8 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
         flexShrink: 0,
         overflowY: 'scroll',
         maxHeight: '100%',
-        marginBottom: 0
+        marginBottom: 0,
+        zIndex: 1
       }}>
         <Field>
           name:
@@ -432,18 +452,153 @@ class EditorState {
   animations: Animation[];
 }
 
-const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean) => {
-  console.warn(this.state);
+// TODO extract to class
+var svg, selectedElement, offset, dargCircle, dargPolygon, selectedParselId, polygonCenter;
+
+function getMousePosition(evt) {
+  var CTM = svg.getScreenCTM();
+  return {
+    x: (evt.clientX - CTM.e) / CTM.a,
+    y: (evt.clientY - CTM.f) / CTM.d
+  };
+}
+
+//TODO move to utils
+var center = (arr) => {
+  var minX, maxX, minY, maxY;
+  for (var i = 0; i < arr.length; i++) {
+    minX = (arr[i].x < minX || minX == null) ? arr[i].x : minX;
+    maxX = (arr[i].x > maxX || maxX == null) ? arr[i].x : maxX;
+    minY = (arr[i].y < minY || minY == null) ? arr[i].y : minY;
+    maxY = (arr[i].y > maxY || maxY == null) ? arr[i].y : maxY;
+  }
+
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+}
+
+function startDrag(evt, touch) {
+  if (evt.target.classList.contains('draggable')) {
+    selectedElement = evt.target;
+    if (touch) {
+      let x = evt.touches[0].clientX;
+      let y = evt.touches[0].clientY;
+      offset = { x: x, y: y };
+    } else {
+      offset = getMousePosition(evt);
+    }
+
+    if (selectedElement.tagName === 'circle') {
+      offset.x -= parseFloat(selectedElement.getAttributeNS(null, "cx"));
+      offset.y -= parseFloat(selectedElement.getAttributeNS(null, "cy"));
+    }
+    if (selectedElement.tagName === 'polygon') {
+      polygonCenter = center(flatPointsToPoints(selectedElement.getAttributeNS(null, "points").split(' ').map(p => Number(p))));
+      offset.x -= polygonCenter.x;
+      offset.y -= polygonCenter.y;
+    }
+  }
+}
+function drag(evt) {
+  if (selectedElement) {
+    evt.preventDefault();
+    var coord = getMousePosition(evt);
+    applyDrag(coord);
+  }
+}
+
+function dragTouch(evt) {
+  let x = evt.touches[0].clientX;
+  let y = evt.touches[0].clientY;
+  if (selectedElement) {
+    evt.preventDefault();
+    var coord = { x: x, y: y };
+    applyDrag(coord);
+
+  } else {
+    startDrag(evt, true);
+  }
+}
+
+function applyDrag(coord) {
+  if (selectedElement.tagName === 'circle') {
+    dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), Math.max(0, Math.min(coord.x - offset.x, 600)), Math.max(0, Math.min(coord.y - offset.y, 600)), selectedParselId);
+  } else if (selectedElement.tagName === 'polygon') {
+    let newCenter = { x: coord.x - offset.x, y: coord.y - offset.y }
+    dargPolygon(selectedParselId, {x: newCenter.x, y: newCenter.y});
+  }
+
+}
+
+function endDrag(evt) {
+  selectedElement = null;
+}
+
+function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: number, x: number, y: number, selected: string) => void, dargPolygonCallback: (id: string, newCenter: {x: number, y: number}) => void) {
+  svg = target;
+  selectedParselId = parselId;
+  dargCircle = dargCircleCallback;
+  dargPolygon = dargPolygonCallback;
+  if (svg === null) {
+    return;
+  }
+  svg.removeEventListener('mousedown', startDrag);
+  svg.removeEventListener('mousemove', drag);
+  svg.removeEventListener('mouseup', endDrag);
+  svg.removeEventListener('mouseleave', endDrag);
+
+
+  svg.addEventListener('mousedown', startDrag);
+  svg.addEventListener('mousemove', drag);
+  svg.addEventListener('mouseup', endDrag);
+  svg.addEventListener('mouseleave', endDrag);
+
+  svg.removeEventListener('touchmove', dragTouch);
+  svg.removeEventListener('touchend', endDrag);
+
+
+  svg.addEventListener('touchmove', dragTouch);
+  svg.addEventListener('touchend', endDrag);
+}
+
+const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[]) => void) => {
   let polygonsReversed = [...polygons].reverse();
+
+  let dots = []
+  for (let polygon of polygons) {
+    if (polygon.id === selected) {
+
+      let points = flatPointsToPoints(polygon.points);
+
+      let dotsInv = points.map((point, i) => <circle key={polygon.id + '_point_' + i} id={polygon.id + '_point_' + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='25' fill='transparent' stroke='black' strokeWidth='1' />)
+
+      let dts = points.map((point, i) => <circle key={polygon.id + '_point_white_' + i} id={polygon.id + '_point_white_' + i} cursor="move" cx={point.x} cy={point.y} r='5' fill='white' stroke='black' strokeWidth='1' />)
+      dots.push(...dts, ...dotsInv);
+    }
+
+  }
+
 
   return (
 
-    <svg height="100%" width="100%" viewBox="0 0 600 600" {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
+    <svg height="100%" width="100%" viewBox="0 0 600 600" ref={ref => makeDraggable(ref, selected, (id, x, y, s) => {
+      if (selected === s) {
+        let newPath = [...polygons.filter(p => p.id === selected)[0].points]
+        newPath[id * 2] = x;
+        newPath[id * 2 + 1] = y;
+        dragCallback(selected, newPath);
+      }
+    }, (selected: string, newCenter: {x: number, y: number}) => {
+      let selectedPolygonPonts = polygons.filter(p => p.id === selected)[0].points;
+      let oldCenter = center(flatPointsToPoints(selectedPolygonPonts));
+      let newPath = selectedPolygonPonts.map((p, i) =>  p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
+      dragCallback(selected, newPath);
+    })} {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
       {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {border && <rect key='border1' id='border' x="1" y="1" width="598" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
       {polygonsReversed.map(polygon =>
-        <polygon key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} />
+        <polygon cursor={polygon.id === selected ? 'move' : 'default'} className={polygon.id === selected ? 'draggable' : undefined} key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} onClick={ref => onSelect ? onSelect((ref.target as any).id) : undefined} />
       )}
+      {dots}
       {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {middle && <rect key='middlev1' id='middlev' x="201" y="1" width="198" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
@@ -451,7 +606,7 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
     </svg>)
 }
 
-const animation = (anims: Animation[], polygons: Polygon[]) => {
+const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: string) => {
   let animationsKeyframes: any = {};
   let animations: any = {};
   for (let a of anims) {
@@ -461,6 +616,13 @@ const animation = (anims: Animation[], polygons: Polygon[]) => {
         opacity: s.opacity,
         transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y + '%, 0)' : undefined,
       }
+
+      // adding this boolshit just to restart animation = sync polygon animation with dots
+      if (selectedPolygonId) {
+        keyframes[selectedPolygonId] = {
+          opacity: 0,
+        }
+      }
     }
     animationsKeyframes[a.id] = glamor.keyframes({
       ...keyframes
@@ -468,17 +630,23 @@ const animation = (anims: Animation[], polygons: Polygon[]) => {
     animations[a.id] = a
   }
 
-  let animation: any = {};
+  let animationRes: any = {};
 
   for (let p of polygons) {
     if (p.animation && animations[p.animation]) {
-      animation['& #' + p.id] = {
+      let toAnimate = ['& #' + p.id];
+      if (p.id === selectedPolygonId) {
+        for (let i = 0; i < p.points.length / 2; i++) {
+          toAnimate.push('& #' + p.id + '_point_white_' + i);
+          toAnimate.push('& #' + p.id + '_point_' + i);
+        }
+      }
+      animationRes[toAnimate.join(', ')] = {
         animation: `${animationsKeyframes[p.animation]} ${animations[p.animation].time}s infinite`
       }
     }
   }
-
-  return animation;
+  return animationRes;
 
 }
 
@@ -515,7 +683,9 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <Vertical ><Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}>P</Button></Vertical >
           <Vertical ><Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}>A</Button></Vertical >
         </Vertical>
-        <SideBar>
+        <SideBar style={{
+          zIndex: 1,
+        }}>
 
           <SidebarList>
             {this.state.tab === 'polygons' && this.state.polygons.map((p, i) => <PolygonsListItem
@@ -589,21 +759,23 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         </SideBar>
         {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
         {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
-        <div style={{
+        <StyledScene style={{
           flexGrow: 1,
-          zIndex: -1,
-        }} >
-          <StyledScene blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons) : undefined}>
-            {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle)}
-          </StyledScene>
-        </div>
-        <Vertical style={{ padding: 10 }}>
-          <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox"  style={{marginRight: 8}} checked={this.state.blur} onChange={() => { }} />blur </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox"  style={{marginRight: 8}} checked={this.state.fill} onChange={() => { }} />fill </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox"  style={{marginRight: 8}} checked={this.state.grid} onChange={() => { }} />grid </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox"  style={{marginRight: 8}} checked={this.state.border} onChange={() => { }} />scene bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox"  style={{marginRight: 8}} checked={this.state.middle} onChange={() => { }} />middle bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox"  style={{marginRight: 8}} checked={this.state.animate} onChange={() => { }} />animate </Horizontal>
+        }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
+          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.selectedP, (id) => { this.setState({ selectedP: id }) }, (changedPolygonId, newPath) => {
+            let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
+            changed.points = newPath;
+            this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
+            this.setState({});
+          })}
+        </StyledScene>
+        <Vertical style={{ padding: 10, zIndex: 1 }}>
+          <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.blur)} onChange={() => { }} />blur </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.fill)} onChange={() => { }} />fill </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.grid)} onChange={() => { }} />grid </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.border)} onChange={() => { }} />scene bounds </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.middle)} onChange={() => { }} />middle bounds </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.animate)} onChange={() => { }} />animate </Horizontal>
         </Vertical>
 
       </Root >
