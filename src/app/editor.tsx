@@ -259,9 +259,10 @@ class AnimationListItem extends React.Component<{ item: Animation, selected?: bo
       id: 'polygon_1',
       name: 'polygon42',
       points: [200, 200, 400, 200, 400, 400, 200, 400],
-      fill: '0365B7',
+      fill: 'black',
       animation: this.props.item.id,
     }
+
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
         <div style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>{this.props.item.name}</div>
@@ -372,7 +373,6 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
           <>
             {k === 0 && (
               <div style={{
-                margin: 0,
                 borderRadius: 10,
                 border: '1px solid blue',
                 alignSelf: 'center',
@@ -433,6 +433,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
               </Vertical>
             </Vertical>
+
           </>
         ))}
         <Button onClick={() => {
@@ -638,17 +639,16 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
   for (let a of anims) {
     let keyframes: any = {}
 
-    // let stepsTime = 0;
-    // let i = 0;
-    // for (let s of this.props.item.steps) {
-    //   if (i++ > 0) {
-    //     stepsTime += s.timing;
-    //   }
-    // }
+    let fullTime = 0;
     for (let s of a.steps) {
-      keyframes[s.timing + "%"] = {
-        opacity: s.opacity,
-        transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y + '%, 0)' : undefined,
+      fullTime += s.timing;
+    }
+    let sumTime = 0;
+    for (let s of a.steps) {
+      sumTime += s.timing
+      keyframes[sumTime / fullTime * 100 + "%"] = {
+        opacity: s.opacity ? s.opacity / 100 : undefined,
+        transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y * -1 + '%, 0)' : undefined,
       }
 
       // adding this boolshit just to restart animation = sync polygon animation with dots
