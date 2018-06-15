@@ -480,8 +480,8 @@ function startDrag(evt, touch) {
   if (evt.target.classList.contains('draggable')) {
     selectedElement = evt.target;
     if (touch) {
-      let x = evt.touches[0].clientX;
-      let y = evt.touches[0].clientY;
+      let x = evt.touches[0].clientX *  window.devicePixelRatio;
+      let y = evt.touches[0].clientY *  window.devicePixelRatio;
       offset = { x: x, y: y };
     } else {
       offset = getMousePosition(evt);
@@ -507,8 +507,9 @@ function drag(evt) {
 }
 
 function dragTouch(evt) {
-  let x = evt.touches[0].clientX;
-  let y = evt.touches[0].clientY;
+  console.warn(evt)
+  let x = evt.touches[0].clientX *  window.devicePixelRatio;
+  let y = evt.touches[0].clientY *  window.devicePixelRatio;
   if (selectedElement) {
     evt.preventDefault();
     var coord = { x: x, y: y };
