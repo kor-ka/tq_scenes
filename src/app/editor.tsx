@@ -477,11 +477,12 @@ var center = (arr) => {
 }
 
 function startDrag(evt, touch) {
+  console.warn(window.devicePixelRatio)
   if (evt.target.classList.contains('draggable')) {
     selectedElement = evt.target;
     if (touch) {
-      let x = evt.touches[0].clientX *  window.devicePixelRatio;
-      let y = evt.touches[0].clientY *  window.devicePixelRatio;
+      let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
+      let y = evt.targetTouches[0].screenY * window.devicePixelRatio;
       offset = { x: x, y: y };
     } else {
       offset = getMousePosition(evt);
@@ -508,8 +509,8 @@ function drag(evt) {
 
 function dragTouch(evt) {
   console.warn(evt)
-  let x = evt.touches[0].clientX *  window.devicePixelRatio;
-  let y = evt.touches[0].clientY *  window.devicePixelRatio;
+  let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
+  let y = evt.targetTouches[0].screenY * window.devicePixelRatio;
   if (selectedElement) {
     evt.preventDefault();
     var coord = { x: x, y: y };
@@ -698,6 +699,48 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         }}>
 
           <SidebarList>
+            <Vertical>
+              <Button style={{ margin: 10 }} onClick={() => {
+                if (this.state.tab === 'animations') {
+                  let id = 'animation_' + new Date().getMilliseconds();
+                  this.state.animations.unshift({
+                    id: id,
+                    name: 'animation',
+                    steps: [{
+                      timing: 0,
+                      opacity: 0,
+                    },
+                    {
+                      timing: 50,
+                      opacity: 1,
+                    },
+                    {
+                      timing: 100,
+                      opacity: 0,
+                    }],
+                    time: 5
+                  })
+                  this.setState({
+                    animations: this.state.animations,
+                    selectedA: id,
+                  })
+                }
+                if (this.state.tab === 'polygons') {
+                  let id = 'polygon_' + new Date().getMilliseconds();
+                  this.state.polygons.unshift({
+                    id: id,
+                    name: 'polygon',
+                    points: [200, 200, 400, 200, 400, 400, 200, 400],
+                    fill: '#03FF00',
+                  })
+                  this.setState({
+                    polygons: this.state.polygons,
+                    selectedP: id,
+                  })
+                }
+
+              }}>+</Button>
+            </Vertical>
             {this.state.tab === 'polygons' && this.state.polygons.map((p, i) => <PolygonsListItem
               index={i}
               isLast={i === this.state.polygons.length - 1}
@@ -723,48 +766,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                 selectedA: id
               })
             }} selected={this.state.selectedA === p.id} />)}
-            <Vertical>
-              <Button style={{ margin: 10 }} onClick={() => {
-                if (this.state.tab === 'animations') {
-                  let id = 'animation_' + new Date().getMilliseconds();
-                  this.state.animations.push({
-                    id: id,
-                    name: 'animation',
-                    steps: [{
-                      timing: 0,
-                      opacity: 0,
-                    },
-                    {
-                      timing: 50,
-                      opacity: 1,
-                    },
-                    {
-                      timing: 100,
-                      opacity: 0,
-                    }],
-                    time: 5
-                  })
-                  this.setState({
-                    animations: this.state.animations,
-                    selectedA: id,
-                  })
-                }
-                if (this.state.tab === 'polygons') {
-                  let id = 'polygon_' + new Date().getMilliseconds();
-                  this.state.polygons.push({
-                    id: id,
-                    name: 'polygon',
-                    points: [200, 200, 400, 200, 400, 400, 200, 400],
-                    fill: '#03FF00',
-                  })
-                  this.setState({
-                    polygons: this.state.polygons,
-                    selectedP: id,
-                  })
-                }
 
-              }}>+</Button>
-            </Vertical>
           </SidebarList>
         </SideBar>
         {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
