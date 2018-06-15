@@ -282,7 +282,7 @@ function hexToG(h) { return parseInt((cutHex(h)).substring(2, 4), 16) }
 function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
 function cutHex(h) { return (h.charAt(0) == "#") ? h.substring(1, 7) : h }
 
-class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void }> {
+class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void, copy: (id: string) => void }> {
 
 
   render() {
@@ -324,14 +324,16 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
           {this.props.animations.map(a => <option key={a.id} value={a.id}>animation: {a.name}</option>)}
         </select>
         {/* <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal> */}
-
-        <Field > <div></div><Button color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</Button></Field>
+        <Field >
+          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}>Copy polygon</Button>
+          <Button key={'delete'} color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</Button>
+        </Field>
       </Vertical>
     );
   }
 }
 
-class AnimationFullItem extends React.Component<{ item: Animation, submit: (item: Animation) => void, delete: (id: string) => void }> {
+class AnimationFullItem extends React.Component<{ item: Animation, submit: (item: Animation) => void, copy: (id: string) => void, delete: (id: string) => void }> {
 
   render() {
     let res: Animation = { ...this.props.item };
@@ -455,8 +457,10 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
           this.props.submit(res)
         }}> + </Button>
 
-        <Field style={{ marginRight: 0 }}><div></div><Button color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete animation</Button></Field>
-
+        <Field >
+          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}>Copy animation</Button>
+          <Button key={'delete'} color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete animation</Button>
+        </Field>
       </Vertical>
     );
   }
@@ -469,6 +473,7 @@ class EditorState {
   blur?: boolean;
   fill?: boolean;
   animate: boolean;
+  dragCircles: boolean;
   border: boolean;
   grid: boolean;
   middle?: boolean;
@@ -548,7 +553,8 @@ function dragTouch(evt) {
 
 function applyDrag(coord) {
   if (selectedElement.tagName === 'circle') {
-    dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), Math.max(0, Math.min(coord.x - offset.x, 600)), Math.max(0, Math.min(coord.y - offset.y, 600)), selectedParselId);
+    // Math.max(0, Math.min(coord.x - offset.x, 600)), Math.max(0, Math.min(coord.y - offset.y, 600))
+    dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), coord.x - offset.x, coord.y - offset.y, selectedParselId);
   } else if (selectedElement.tagName === 'polygon') {
     let newCenter = { x: coord.x - offset.x, y: coord.y - offset.y }
     dargPolygon(selectedParselId, { x: newCenter.x, y: newCenter.y });
@@ -587,7 +593,7 @@ function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: nu
   svg.addEventListener('touchend', endDrag);
 }
 
-const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[]) => void) => {
+const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, dragCircles?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[]) => void) => {
   let polygonsReversed = [...polygons].reverse();
 
   let dots = []
@@ -598,8 +604,8 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
 
       let dotsInv = points.map((point, i) => <circle key={polygon.id + '_point_' + i} id={polygon.id + '_point_' + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='25' fill='transparent' stroke='black' strokeWidth='1' />)
 
-      let dts = points.map((point, i) => <circle key={polygon.id + '_point_white_' + i} id={polygon.id + '_point_white_' + i} cursor="move" cx={point.x} cy={point.y} r='5' fill='white' stroke='black' strokeWidth='1' />)
-      dots.push(...dts, ...dotsInv);
+      let dts = points.map((point, i) => <circle key={polygon.id + '_point_white_' + i} id={polygon.id +  (dragCircles ? '_point_white_' : '_point_') + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='5' fill='white' stroke='black' strokeWidth='1' />)
+      dots.push(...dts, ...(dragCircles? dotsInv: []));
     }
 
   }
@@ -647,7 +653,7 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
     for (let s of a.steps) {
       sumTime += s.timing
       keyframes[sumTime / fullTime * 100 + "%"] = {
-        opacity: s.opacity ? s.opacity / 100 : undefined,
+        opacity: (s.opacity !== null && s.opacity !== undefined && s.opacity !== NaN) ? s.opacity / 100 : undefined,
         transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y * -1 + '%, 0)' : undefined,
       }
 
@@ -698,6 +704,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       polygons: polygons,
       border: true,
       grid: true,
+      dragCircles: true,
       animations: animations,
       selectedP: polygons.length > 0 ? polygons[0].id : undefined,
       selectedA: animations.length > 0 ? animations[0].id : undefined,
@@ -734,7 +741,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             <Vertical>
               <Button style={{ margin: 10 }} onClick={() => {
                 if (this.state.tab === 'animations') {
-                  let id = 'animation_' + new Date().getMilliseconds();
+                  let id = 'animation_' + new Date().getTime();
                   this.state.animations.unshift({
                     id: id,
                     name: 'animation',
@@ -758,7 +765,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                   })
                 }
                 if (this.state.tab === 'polygons') {
-                  let id = 'polygon_' + new Date().getMilliseconds();
+                  let id = 'polygon_' + new Date().getTime();
                   this.state.polygons.unshift({
                     id: id,
                     name: 'polygon',
@@ -801,12 +808,22 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
           </SidebarList>
         </SideBar>
-        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
-        {this.state.tab === 'animations' && selectedA && <AnimationFullItem item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} copy={toCopy => {
+          let res = [...this.state.polygons];
+          let id = 'polygon_' + new Date().getTime();
+          res.unshift({ ...this.state.polygons.filter(p => p.id === toCopy)[0], id: id });
+          this.setState({ polygons: res, selectedP: id });
+        }} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'animations' && selectedA && <AnimationFullItem copy={toCopy => {
+          let res = [...this.state.animations];
+          let id = 'animation_' + new Date().getTime();
+          res.unshift({ ...this.state.animations.filter(p => p.id === toCopy)[0], id: id });
+          this.setState({ animations: res, selectedA: id });
+        }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <StyledScene style={{
           flexGrow: 1,
         }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
-          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.selectedP, (id) => { this.setState({ selectedP: id }) }, (changedPolygonId, newPath) => {
+          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id }) }, (changedPolygonId, newPath) => {
             let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
             changed.points = newPath;
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
@@ -819,6 +836,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.border)} onChange={() => { }} />scene bounds </Horizontal>
           <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.middle)} onChange={() => { }} />middle bounds </Horizontal>
           <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.animate)} onChange={() => { }} />animate </Horizontal>
+          <Horizontal onClick={() => this.switchFlag('dragCircles')}><Input key="dragCircles" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.dragCircles)} onChange={() => { }} />dragCircles </Horizontal>
         </Vertical>
 
       </Root >
