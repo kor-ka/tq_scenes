@@ -334,6 +334,11 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
   render() {
     let res: Animation = { ...this.props.item };
+    let stepsTime = 0;
+    let i = 0;
+    for (let s of this.props.item.steps) {
+      stepsTime += s.timing;
+    }
     return (
       <Vertical style={{
         paddingLeft: 16,
@@ -364,51 +369,71 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
         <Field> STEPS: </Field>
         {this.props.item.steps.map((step, k) => (
-          <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: 'blue', borderRadius: 8, padding: 8 }}>
-            <Field>
-              timing:
+          <>
+            {k === 0 && (
+              <div style={{
+                margin: 0,
+                borderRadius: 10,
+                border: '1px solid blue',
+                alignSelf: 'center',
+                flexShrink: 0,
+                color: 'blue',
+                padding: 8
+              }} >start</div>
+            )}
+            <div style={{
+              height: 100 * step.timing / stepsTime,
+              width: 0,
+              border: '1px solid blue',
+              alignSelf: 'center',
+              flexShrink: 0
+            }} />
+            <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: 'blue', borderRadius: 8, padding: 8 }}>
+              <Field>
+                delay:
               <Input value={step.timing} onChange={(v: any) => {
-                step.timing = Number(v.target.value) || 0;
-                this.props.submit(res)
-              }} />
-            </Field>
-            <Field>
-              opacity:
+                  step.timing = Number(v.target.value) || 0;
+                  this.props.submit(res)
+                }} />
+              </Field>
+              <Field>
+                opacity:
                 <Input value={step.opacity === undefined ? '' : step.opacity} onChange={(v: any) => {
-                step.opacity = v.target.value === '' ? undefined : Number(v.target.value);
-                this.props.submit(res)
-              }} />
-            </Field>
-            <Vertical>
-              <Field>
-                x: <Input value={step.translate === undefined ? '' : step.translate.x} onChange={(v: any) => {
-                  step.translate = { x: v.target.value === '' ? undefined : Number(v.target.value), y: step.translate ? step.translate.y : undefined }
+                  step.opacity = v.target.value === '' ? undefined : Number(v.target.value);
                   this.props.submit(res)
                 }} />
               </Field>
-              <Field>
-                y: <Input value={step.translate === undefined ? '' : step.translate.y} onChange={(v: any) => {
-                  step.translate = { y: v.target.value === '' ? undefined : Number(v.target.value), x: step.translate ? step.translate.x : undefined }
-                  this.props.submit(res)
-                }} />
-              </Field>
-              <Horizontal style={{ marginBottom: 0 }}>
-                <Button onClick={() => {
-                  res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
-                  this.props.submit(res)
-                }} disabled={k === 0}> Up </Button>
-                <Button onClick={() => {
-                  res.steps.splice(k + 1, 0, res.steps.splice(k, 1)[0])
-                  this.props.submit(res)
-                }} disabled={k === res.steps.length - 1}> Down </Button>
-                <Button color='red' onClick={() => {
-                  res.steps.splice(k, 1)
-                  this.props.submit(res)
-                }}> Delete </Button>
-              </Horizontal>
+              <Vertical>
+                <Field>
+                  x: <Input value={step.translate === undefined ? '' : step.translate.x} onChange={(v: any) => {
+                    step.translate = { x: v.target.value === '' ? undefined : Number(v.target.value), y: step.translate ? step.translate.y : undefined }
+                    this.props.submit(res)
+                  }} />
+                </Field>
+                <Field>
+                  y: <Input value={step.translate === undefined ? '' : step.translate.y} onChange={(v: any) => {
+                    step.translate = { y: v.target.value === '' ? undefined : Number(v.target.value), x: step.translate ? step.translate.x : undefined }
+                    this.props.submit(res)
+                  }} />
+                </Field>
+                <Horizontal style={{ marginBottom: 0 }}>
+                  <Button onClick={() => {
+                    res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
+                    this.props.submit(res)
+                  }} disabled={k === 0}> Up </Button>
+                  <Button onClick={() => {
+                    res.steps.splice(k + 1, 0, res.steps.splice(k, 1)[0])
+                    this.props.submit(res)
+                  }} disabled={k === res.steps.length - 1}> Down </Button>
+                  <Button color='red' onClick={() => {
+                    res.steps.splice(k, 1)
+                    this.props.submit(res)
+                  }}> Delete </Button>
+                </Horizontal>
 
+              </Vertical>
             </Vertical>
-          </Vertical>
+          </>
         ))}
         <Button onClick={() => {
           if (res.steps.length === 0) {
@@ -477,7 +502,6 @@ var center = (arr) => {
 }
 
 function startDrag(evt, touch) {
-  console.warn(window.devicePixelRatio)
   if (evt.target.classList.contains('draggable')) {
     selectedElement = evt.target;
     if (touch) {
@@ -613,6 +637,14 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
   let animations: any = {};
   for (let a of anims) {
     let keyframes: any = {}
+
+    // let stepsTime = 0;
+    // let i = 0;
+    // for (let s of this.props.item.steps) {
+    //   if (i++ > 0) {
+    //     stepsTime += s.timing;
+    //   }
+    // }
     for (let s of a.steps) {
       keyframes[s.timing + "%"] = {
         opacity: s.opacity,
