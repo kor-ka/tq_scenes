@@ -604,8 +604,8 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
 
       let dotsInv = points.map((point, i) => <circle key={polygon.id + '_point_' + i} id={polygon.id + '_point_' + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='25' fill='transparent' stroke='black' strokeWidth='1' />)
 
-      let dts = points.map((point, i) => <circle key={polygon.id + '_point_white_' + i} id={polygon.id +  (dragCircles ? '_point_white_' : '_point_') + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='5' fill='white' stroke='black' strokeWidth='1' />)
-      dots.push(...dts, ...(dragCircles? dotsInv: []));
+      let dts = points.map((point, i) => <circle key={polygon.id + '_point_white_' + i} id={polygon.id + (dragCircles ? '_point_white_' : '_point_') + i} className="draggable" cursor="move" cx={point.x} cy={point.y} r='5' fill='white' stroke='black' strokeWidth='1' />)
+      dots.push(...dts, ...(dragCircles ? dotsInv : []));
     }
 
   }
@@ -811,13 +811,15 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} copy={toCopy => {
           let res = [...this.state.polygons];
           let id = 'polygon_' + new Date().getTime();
-          res.unshift({ ...this.state.polygons.filter(p => p.id === toCopy)[0], id: id });
+          let original = this.state.polygons.filter(p => p.id === toCopy)[0];
+          res.unshift({ ...original, id: id, points: [...original.points] });
           this.setState({ polygons: res, selectedP: id });
         }} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
         {this.state.tab === 'animations' && selectedA && <AnimationFullItem copy={toCopy => {
           let res = [...this.state.animations];
           let id = 'animation_' + new Date().getTime();
-          res.unshift({ ...this.state.animations.filter(p => p.id === toCopy)[0], id: id });
+          let original = this.state.animations.filter(p => p.id === toCopy)[0];
+          res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: {...s.translate} })) });
           this.setState({ animations: res, selectedA: id });
         }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <StyledScene style={{
