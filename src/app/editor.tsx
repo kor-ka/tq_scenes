@@ -14,13 +14,14 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
 
 const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => ({
   cursor: 'pointer',
+  padding: 8,
   color: props.color || 'blue',
   borderStyle: 'solid',
   borderWidth: 1,
   backgroundColor: 'transparent',
   borderColor: props.color || 'blue',
   borderRadius: 8,
-  minHeight: 24,
+  minHeight: 40,
   ':hover': {
     backgroundColor: props.color || 'blue',
     color: 'white',
@@ -34,8 +35,12 @@ const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => (
     ...(props.active ? {
       backgroundColor: props.color || 'blue',
       color: 'white',
+      opacity: 1,
       borderColor: props.color || 'blue',
-    } : {})
+    } : {
+        opacity: 0.2,
+
+      })
   },
   ':focus': {
     outline: 0
@@ -121,18 +126,18 @@ const SidebarList = Glamorous.div({
   flexShrink: 0,
   overflowY: 'scroll',
   maxHeight: '100%',
-  background: '#efefef',
+  background: '#f7f7f7',
 });
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
   padding: 10,
-  minHeight: 58,
   display: 'flex',
-  backgroundColor: props.selected ? '#e5e5e5' : undefined,
+  flexShrink: 0,
+  backgroundColor: props.selected ? '#efefef' : undefined,
   justifyContent: 'space-between',
   alignItems: 'center',
   ':hover': {
-    background: '#dedede'
+    background: '#f3f3f3'
   }
 }));
 
@@ -225,23 +230,12 @@ const move = {
 
 
 
-class PolygonsListItem extends React.Component<{ item: Polygon, index: number, isLast: boolean, selected?: boolean, onClick: (id: string) => void, move(id: string, from: number, to: number) }> {
+class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boolean, onClick: (id: string) => void }> {
   render() {
     return (
       <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
         <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }} >
           <div>{this.props.item.name}</div>
-
-          <Horizontal>
-            <Button onClick={() => {
-              this.props.move(this.props.item.id, this.props.index, this.props.index - 1);
-            }} disabled={this.props.index === 0}> Up </Button>
-            <Button onClick={() => {
-
-              this.props.move(this.props.item.id, this.props.index, this.props.index + 1);
-            }} disabled={this.props.isLast}> Down </Button>
-
-          </Horizontal>
         </Vertical>
         <div style={{ height: 48, width: 48 }}>
           <StyledScene blur={false} grid={true}>
@@ -282,7 +276,7 @@ function hexToG(h) { return parseInt((cutHex(h)).substring(2, 4), 16) }
 function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
 function cutHex(h) { return (h.charAt(0) == "#") ? h.substring(1, 7) : h }
 
-class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void, copy: (id: string) => void }> {
+class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void, copy: (id: string) => void, move: (id: string, from: number, to: number) => void, isLast: boolean, index: number }> {
 
 
   render() {
@@ -291,10 +285,10 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
 
     return (
       <Vertical style={{
-        paddingLeft: 16,
-        paddingRight: 16,
+        paddingLeft: 8,
+        paddingRight: 8,
         flexShrink: 0,
-        paddingTop: 8,
+        paddingTop: 16,
         overflowY: 'scroll',
         maxHeight: '100%',
         width: 248,
@@ -324,10 +318,21 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
           {this.props.animations.map(a => <option key={a.id} value={a.id}>animation: {a.name}</option>)}
         </select>
         {/* <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal> */}
-        <Field >
-          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}>Copy polygon</Button>
-          <Button key={'delete'} color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete polygon</Button>
-        </Field>
+        <Horizontal >
+          <Button onClick={() => {
+            this.props.move(this.props.item.id, this.props.index, this.props.index - 1);
+          }} disabled={this.props.index === 0}> <i className="material-icons">flip_to_front</i> </Button>
+          <Button onClick={() => {
+
+            this.props.move(this.props.item.id, this.props.index, this.props.index + 1);
+          }} disabled={this.props.isLast}> <i className="material-icons">flip_to_back</i> </Button>
+          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i></Button>
+
+        </Horizontal>
+
+
+        <Button key={'delete'} color='red' onClick={() => this.props.delete(this.props.item.id)}><i className="material-icons">delete</i> </Button>
+
       </Vertical>
     );
   }
@@ -344,9 +349,9 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
     }
     return (
       <Vertical style={{
-        paddingLeft: 16,
-        paddingRight: 16,
-        paddingTop: 8,
+        paddingLeft: 8,
+        paddingRight: 8,
+        paddingTop: 16,
         width: 248,
         flexShrink: 0,
         overflowY: 'scroll',
@@ -372,7 +377,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
         <Field> STEPS: </Field>
         {this.props.item.steps.map((step, k) => (
-          <>
+          <Vertical key={'step_' + k}>
             {k === 0 && (
               <div style={{
                 borderRadius: 10,
@@ -422,21 +427,21 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
                   <Button onClick={() => {
                     res.steps.splice(k - 1, 0, res.steps.splice(k, 1)[0])
                     this.props.submit(res)
-                  }} disabled={k === 0}> Up </Button>
+                  }} disabled={k === 0}> <i className="material-icons">keyboard_arrow_up</i> </Button>
                   <Button onClick={() => {
                     res.steps.splice(k + 1, 0, res.steps.splice(k, 1)[0])
                     this.props.submit(res)
-                  }} disabled={k === res.steps.length - 1}> Down </Button>
+                  }} disabled={k === res.steps.length - 1}> <i className="material-icons">keyboard_arrow_down</i> </Button>
                   <Button color='red' onClick={() => {
                     res.steps.splice(k, 1)
                     this.props.submit(res)
-                  }}> Delete </Button>
+                  }}> <i className="material-icons">delete</i>  </Button>
                 </Horizontal>
 
               </Vertical>
             </Vertical>
 
-          </>
+          </Vertical>
         ))}
         <Button onClick={() => {
           if (res.steps.length === 0) {
@@ -455,11 +460,11 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
           }
 
           this.props.submit(res)
-        }}> + </Button>
+        }}> <i className="material-icons">add</i></Button>
 
-        <Field >
-          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}>Copy animation</Button>
-          <Button key={'delete'} color='red' onClick={() => this.props.delete(this.props.item.id)}>Delete animation</Button>
+        <Field style={{ marginBottom: 16 }}>
+          <Button color='blue' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i> </Button>
+          <Button color='red' onClick={() => this.props.delete(this.props.item.id)}><i className="material-icons">delete</i> </Button>
         </Field>
       </Vertical>
     );
@@ -734,14 +739,19 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   }
 
   render() {
-    let selectedP = this.state.polygons.filter(p => p.id === this.state.selectedP)[0];
+    let selectedPIndex = -1;
+    let selectedP = this.state.polygons.filter((p, i) => {
+      selectedPIndex = selectedPIndex !== -1 ? selectedPIndex : this.state.selectedP === p.id ? i : -1;
+      return p.id === this.state.selectedP;
+    })[0];
+    console.warn(selectedPIndex)
     let selectedA = this.state.animations.filter(p => p.id === this.state.selectedA)[0];
 
     return (
       <Root>
-        <Vertical style={{ padding: 10 }} >
-          <Vertical ><Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}>P</Button></Vertical >
-          <Vertical ><Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}>A</Button></Vertical >
+        <Vertical style={{ padding: 8, marginTop: 8 }} >
+          <Vertical ><Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button></Vertical >
+          <Vertical ><Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button></Vertical >
         </Vertical>
         <SideBar style={{
           zIndex: 1,
@@ -749,7 +759,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
           <SidebarList>
             <Vertical>
-              <Button style={{ margin: 10 }} onClick={() => {
+              <Button style={{ margin: 8, marginTop: 16}} onClick={() => {
                 if (this.state.tab === 'animations') {
                   let id = 'animation_' + new Date().getTime();
                   this.state.animations.unshift({
@@ -788,50 +798,56 @@ export class SceneEditor extends React.Component<{}, EditorState> {
                   })
                 }
 
-              }}>+</Button>
+              }}><i className="material-icons">add</i> </Button>
             </Vertical>
-            {this.state.tab === 'polygons' && this.state.polygons.map((p, i) => <PolygonsListItem
-              index={i}
-              isLast={i === this.state.polygons.length - 1}
-              move={(id, from, to) => {
-                console.warn(id, from, to)
-                let res = [...this.state.polygons]
-                res.splice(from, 0, res.splice(to, 1)[0])
-                this.setState({
-                  polygons: res
-                });
-              }}
-              key={p.id}
-              item={p}
-              onClick={id => {
-                this.setState({
-                  selectedP: id
-                })
-              }}
-              selected={this.state.selectedP === p.id} />)}
+            {this.state.tab === 'polygons' && this.state.polygons.map((p, i) =>
+              <PolygonsListItem
 
-            {this.state.tab === 'animations' && this.state.animations.map(p => <AnimationListItem key={p.id} item={p} onClick={id => {
-              this.setState({
-                selectedA: id
-              })
-            }} selected={this.state.selectedA === p.id} />)}
+                key={p.id}
+                item={p}
+                onClick={id => {
+                  this.setState({
+                    selectedP: id
+                  })
+                }}
+                selected={this.state.selectedP === p.id} />)}
+
+            {this.state.tab === 'animations' && this.state.animations.map(p =>
+              <AnimationListItem key={p.id} item={p} onClick={id => {
+                this.setState({
+                  selectedA: id
+                })
+              }} selected={this.state.selectedA === p.id} />)}
 
           </SidebarList>
         </SideBar>
-        {this.state.tab === 'polygons' && selectedP && <PolygonFullItem animations={this.state.animations} item={selectedP} copy={toCopy => {
-          let res = [...this.state.polygons];
-          let id = 'polygon_' + new Date().getTime();
-          let original = this.state.polygons.filter(p => p.id === toCopy)[0];
-          res.unshift({ ...original, id: id, points: [...original.points] });
-          this.setState({ polygons: res, selectedP: id });
-        }} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
-        {this.state.tab === 'animations' && selectedA && <AnimationFullItem copy={toCopy => {
-          let res = [...this.state.animations];
-          let id = 'animation_' + new Date().getTime();
-          let original = this.state.animations.filter(p => p.id === toCopy)[0];
-          res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: { ...s.translate } })) });
-          this.setState({ animations: res, selectedA: id });
-        }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'polygons' && selectedP &&
+          <PolygonFullItem
+            index={selectedPIndex}
+            isLast={selectedPIndex === this.state.polygons.length - 1}
+            move={(id, from, to) => {
+              console.warn(id, from, to)
+              let res = [...this.state.polygons]
+              res.splice(from, 0, res.splice(to, 1)[0])
+              this.setState({
+                polygons: res
+              });
+            }}
+            animations={this.state.animations} item={selectedP} copy={toCopy => {
+              let res = [...this.state.polygons];
+              let id = 'polygon_' + new Date().getTime();
+              let original = this.state.polygons.filter(p => p.id === toCopy)[0];
+              res.unshift({ ...original, id: id, points: [...original.points] });
+              this.setState({ polygons: res, selectedP: id });
+            }} delete={toDelete => this.setState({ polygons: this.state.polygons.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ polygons: [...this.state.polygons].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'animations' && selectedA &&
+          <AnimationFullItem copy={toCopy => {
+            let res = [...this.state.animations];
+            let id = 'animation_' + new Date().getTime();
+            let original = this.state.animations.filter(p => p.id === toCopy)[0];
+            res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: { ...s.translate } })) });
+            this.setState({ animations: res, selectedA: id });
+          }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <StyledScene style={{
           flexGrow: 1,
         }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
