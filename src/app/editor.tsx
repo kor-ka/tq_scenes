@@ -130,7 +130,7 @@ const SidebarList = Glamorous.div({
 });
 
 const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
-  padding: 10,
+  padding: 16,
   display: 'flex',
   flexShrink: 0,
   backgroundColor: props.selected ? '#efefef' : undefined,
@@ -325,8 +325,8 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
 
     return (
       <Vertical style={{
-        paddingLeft: 8,
-        paddingRight: 8,
+        paddingLeft: 16,
+        paddingRight: 16,
         flexShrink: 0,
         paddingTop: 16,
         overflowY: 'scroll',
@@ -389,8 +389,8 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
     }
     return (
       <Vertical style={{
-        paddingLeft: 8,
-        paddingRight: 8,
+        paddingLeft: 16,
+        paddingRight: 16,
         paddingTop: 16,
         width: 248,
         flexShrink: 0,
@@ -776,6 +776,18 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     this.setState(state);
   }
 
+  export = () => {
+    let sceneExport = 'data:text/json;charset=utf-8,';
+    sceneExport += JSON.stringify({ scene: { polygons: this.state.polygons, animations: this.state.animations } });
+    var encodedUri = encodeURI(sceneExport);
+    var link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'untitled_scene' + '.json');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   render() {
     let selectedPIndex = -1;
     let selectedP = this.state.polygons.filter((p, i) => {
@@ -786,9 +798,12 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
     return (
       <Root>
-        <Vertical style={{ padding: 8, marginTop: 8 }} >
-          <Vertical ><Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button></Vertical >
-          <Vertical ><Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button></Vertical >
+        <Vertical style={{ padding: 16 }} >
+          <Vertical style={{flexGrow: 1}} >
+            <Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button>
+            <Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button>
+          </Vertical>
+          <Button style={{ alignSelf: 'flex-end' }} onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
         <SideBar style={{
           zIndex: 1,
@@ -796,7 +811,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
           <SidebarList>
             <Vertical>
-              <Button style={{ margin: 8, marginTop: 16 }} onClick={() => {
+              <Button style={{ margin: 16 }} onClick={() => {
                 if (this.state.tab === 'animations') {
                   let id = 'animation_' + new Date().getTime();
                   this.state.animations.unshift({
