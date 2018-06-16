@@ -129,7 +129,6 @@ const flameLeft = glamor.keyframes({
   
   class Scene extends React.Component<{ blur: boolean, scene: JSX.Element, animate: boolean }> {
     render() {
-      console.warn(this.props);
       return (
         <StyledScene blur={this.props.blur} animate={this.props.animate}>
           {this.props.scene}

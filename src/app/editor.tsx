@@ -228,9 +228,8 @@ const move = {
   time: 5
 };
 
-let polygonFillScene = (p: Polygon) => {
-  let points = flatPointsToPoints(p.points);
-  let box = points.reduce((accum: { minX?: number, minY?: number, maxX?: number, maxY?: number }, point: { x: number, y: number }) => {
+let getBox = (points: { x: number, y: number }[]){
+  return points.reduce((accum: { minX?: number, minY?: number, maxX?: number, maxY?: number }, point: { x: number, y: number }) => {
     return {
       minX: accum.minX === undefined ? point.x : Math.min(accum.minX, point.x),
       minY: accum.minY === undefined ? point.y : Math.min(accum.minY, point.y),
@@ -239,17 +238,28 @@ let polygonFillScene = (p: Polygon) => {
     };
   }, { minX: undefined, minY: undefined, maxX: undefined, maxY: undefined });
 
+}
+
+let polygonFillScene = (p: Polygon) => {
+  let points = flatPointsToPoints(p.points);
+  let box = getBox(points);
+
+  // move to 0,0
   points = points.map(p => ({ x: p.x - box.minX, y: p.y - box.minY }));
 
+  // fill space
   let w = box.maxX - box.minX;
   let h = box.maxY - box.minY;
-
-  let density = 600 / Math.max(w, h) ;
-
-  console.warn(density)
-
-
+  let density = 500 / Math.max(w, h);
   points = points.map(p => ({ x: p.x * density, y: p.y * density }));
+
+  // move to center
+  box = getBox(points);
+  w = box.maxX - box.minX;
+  h = box.maxY - box.minY;
+  let offsetX = (600 - w) / 2;
+  let offsetY = (600 - h) / 2;
+  points = points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
 
   let flatPoints = [];
   for (let p of points) {
@@ -257,7 +267,7 @@ let polygonFillScene = (p: Polygon) => {
   }
 
 
-  return {...p, points: flatPoints}
+  return { ...p, points: flatPoints }
 }
 
 class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boolean, onClick: (id: string) => void }> {
