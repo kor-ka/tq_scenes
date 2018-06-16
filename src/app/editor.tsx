@@ -1,7 +1,16 @@
 import * as React from 'react';
 import * as glamor from 'glamor';
 import Glamorous from 'glamorous';
-import { SketchPicker } from 'react-color';
+import { SketchPicker as SketchPickerRaw } from 'react-color';
+
+const SketchPicker = Glamorous(SketchPickerRaw)({
+  boxShadow: 'none !important',
+  width: '226 !important',
+  border: 'solid 1px blue',
+  borderRadius: 8
+
+});
+
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
   backgroundImage: props.grid ? 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)' : undefined,
@@ -338,19 +347,24 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
           res.name = v.target.value;
           this.props.submit(res)
         }} />
-        <div style={{ alignSelf: 'center' }}>
 
-          <SketchPicker
-            color={{ r: hexToR(res.fill), g: hexToG(res.fill), b: hexToB(res.fill), a: res.opacity }}
-            onChangeComplete={c => {
-              res.fill = c.hex;
-              res.opacity = c.hsl.a;
-              this.props.submit(res)
-            }}
-          />
-        </div>
+        <SketchPicker
+          color={{ r: hexToR(res.fill), g: hexToG(res.fill), b: hexToB(res.fill), a: res.opacity }}
+          onChangeComplete={c => {
+            res.fill = c.hex;
+            res.opacity = c.hsl.a;
+            this.props.submit(res)
+          }}
+        />
 
-        <select style={{ height: 24 }} value={this.props.item.animation || ''} onChange={v => {
+        <select style={{
+          border: 'solid 1px blue',
+          borderRadius: 8,
+          height: 40,
+          minHeight: 40,
+          background: 'transparent',
+          outline: 0
+        }} value={this.props.item.animation || ''} onChange={v => {
           res.animation = v.target.value;
           this.props.submit(res);
         }}>
@@ -796,7 +810,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       reader.onload = (evt: any) => {
         let scene = JSON.parse(evt.target.result);
         if (scene.scene.polygons && scene.scene.animations) {
-          this.setState({polygons : scene.scene.polygons, animations : scene.scene.animations})
+          this.setState({ polygons: scene.scene.polygons, animations: scene.scene.animations })
         }
       }
     }
