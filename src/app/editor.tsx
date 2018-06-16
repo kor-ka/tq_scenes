@@ -228,7 +228,37 @@ const move = {
   time: 5
 };
 
+let polygonFillScene = (p: Polygon) => {
+  let points = flatPointsToPoints(p.points);
+  let box = points.reduce((accum: { minX?: number, minY?: number, maxX?: number, maxY?: number }, point: { x: number, y: number }) => {
+    return {
+      minX: accum.minX === undefined ? point.x : Math.min(accum.minX, point.x),
+      minY: accum.minY === undefined ? point.y : Math.min(accum.minY, point.y),
+      maxX: accum.maxX === undefined ? point.x : Math.max(accum.maxX, point.x),
+      maxY: accum.maxY === undefined ? point.y : Math.max(accum.maxY, point.y)
+    };
+  }, { minX: undefined, minY: undefined, maxX: undefined, maxY: undefined });
 
+  points = points.map(p => ({ x: p.x - box.minX, y: p.y - box.minY }));
+
+  let w = box.maxX - box.minX;
+  let h = box.maxY - box.minY;
+
+  let density = 600 / Math.max(w, h) ;
+
+  console.warn(density)
+
+
+  points = points.map(p => ({ x: p.x * density, y: p.y * density }));
+
+  let flatPoints = [];
+  for (let p of points) {
+    flatPoints.push(p.x, p.y)
+  }
+
+
+  return {...p, points: flatPoints}
+}
 
 class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boolean, onClick: (id: string) => void }> {
   render() {
@@ -239,7 +269,7 @@ class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boole
         </Vertical>
         <div style={{ height: 48, width: 48 }}>
           <StyledScene blur={false} grid={true}>
-            {polygonsToSvg([this.props.item], false, true)}
+            {polygonsToSvg([polygonFillScene(this.props.item)])}
           </StyledScene>
         </div>
       </SidebarListItemStyled>
@@ -262,7 +292,7 @@ class AnimationListItem extends React.Component<{ item: Animation, selected?: bo
         <div style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }}>{this.props.item.name}</div>
         <div style={{ height: 48, width: 48 }}>
           <StyledScene blur={false} animation={animation([this.props.item], [p])} grid={true}>
-            {polygonsToSvg([p], false, true)}
+            {polygonsToSvg([p])}
           </StyledScene>
         </div>
       </SidebarListItemStyled>
@@ -759,7 +789,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
           <SidebarList>
             <Vertical>
-              <Button style={{ margin: 8, marginTop: 16}} onClick={() => {
+              <Button style={{ margin: 8, marginTop: 16 }} onClick={() => {
                 if (this.state.tab === 'animations') {
                   let id = 'animation_' + new Date().getTime();
                   this.state.animations.unshift({
