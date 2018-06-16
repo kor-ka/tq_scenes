@@ -788,6 +788,21 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     document.body.removeChild(link);
   }
 
+  import = (e: any) => {
+    if (e.target.files[0]) {
+      var reader = new FileReader();
+      reader.readAsText(e.target.files[0], "UTF-8");
+
+      reader.onload = (evt: any) => {
+        let scene = JSON.parse(evt.target.result);
+        if (scene.scene.polygons && scene.scene.animations) {
+          this.setState({polygons : scene.scene.polygons, animations : scene.scene.animations})
+        }
+      }
+    }
+
+  }
+
   render() {
     let selectedPIndex = -1;
     let selectedP = this.state.polygons.filter((p, i) => {
@@ -799,11 +814,13 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     return (
       <Root>
         <Vertical style={{ padding: 16 }} >
-          <Vertical style={{flexGrow: 1}} >
+          <Vertical style={{ flexGrow: 1 }} >
             <Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button>
             <Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button>
           </Vertical>
-          <Button style={{ alignSelf: 'flex-end' }} onClick={this.export} ><i className="material-icons">save_alt</i></Button>
+          <input style={{ opacity: 0, width: 1 }} type="file" id="file" onChange={this.import} />
+          <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button>
+          <Button onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
         <SideBar style={{
           zIndex: 1,
