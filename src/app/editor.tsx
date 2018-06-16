@@ -694,11 +694,16 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   constructor(props: EditorState) {
     super(props);
 
+    //recover scene state
     let polygons = JSON.parse(window.localStorage.getItem('polygons'))
     console.warn(window.localStorage.getItem('polygons'));
     polygons = polygons || [polygonItem, polygonItem2];
     let animations = JSON.parse(window.localStorage.getItem('animations'))
     animations = animations || [glow, move];
+
+    //recover editor state
+    let editorState = JSON.parse(window.localStorage.getItem('editorState'));
+
     this.state = {
       tab: 'polygons',
       polygons: polygons,
@@ -708,13 +713,18 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       animations: animations,
       selectedP: polygons.length > 0 ? polygons[0].id : undefined,
       selectedA: animations.length > 0 ? animations[0].id : undefined,
-      animate: true
+      animate: true,
+      ...editorState
     };
   }
 
   componentDidUpdate() {
     window.localStorage.setItem('polygons', JSON.stringify(this.state.polygons));
     window.localStorage.setItem('animations', JSON.stringify(this.state.animations));
+
+    let { polygons, animations, ...editorState } = this.state;
+    window.localStorage.setItem('editorState', JSON.stringify(editorState));
+
   }
 
   switchFlag(key: string) {
@@ -819,7 +829,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           let res = [...this.state.animations];
           let id = 'animation_' + new Date().getTime();
           let original = this.state.animations.filter(p => p.id === toCopy)[0];
-          res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: {...s.translate} })) });
+          res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: { ...s.translate } })) });
           this.setState({ animations: res, selectedA: id });
         }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <StyledScene style={{
