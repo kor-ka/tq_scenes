@@ -228,7 +228,7 @@ const move = {
   time: 5
 };
 
-let getBox = (points: { x: number, y: number }[]){
+let getBox = (points: { x: number, y: number }[]) => {
   return points.reduce((accum: { minX?: number, minY?: number, maxX?: number, maxY?: number }, point: { x: number, y: number }) => {
     return {
       minX: accum.minX === undefined ? point.x : Math.min(accum.minX, point.x),
@@ -583,7 +583,6 @@ function drag(evt) {
 }
 
 function dragTouch(evt) {
-  console.warn(evt)
   let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
   let y = evt.targetTouches[0].screenY * window.devicePixelRatio;
   if (selectedElement) {
@@ -741,7 +740,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
     //recover scene state
     let polygons = JSON.parse(window.localStorage.getItem('polygons'))
-    console.warn(window.localStorage.getItem('polygons'));
     polygons = polygons || [polygonItem, polygonItem2];
     let animations = JSON.parse(window.localStorage.getItem('animations'))
     animations = animations || [glow, move];
@@ -784,7 +782,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       selectedPIndex = selectedPIndex !== -1 ? selectedPIndex : this.state.selectedP === p.id ? i : -1;
       return p.id === this.state.selectedP;
     })[0];
-    console.warn(selectedPIndex)
     let selectedA = this.state.animations.filter(p => p.id === this.state.selectedA)[0];
 
     return (
@@ -866,7 +863,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             index={selectedPIndex}
             isLast={selectedPIndex === this.state.polygons.length - 1}
             move={(id, from, to) => {
-              console.warn(id, from, to)
               let res = [...this.state.polygons]
               res.splice(from, 0, res.splice(to, 1)[0])
               this.setState({
