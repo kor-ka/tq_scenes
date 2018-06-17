@@ -148,7 +148,7 @@ const SidebarListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boo
   ':hover': {
     background: '#f3f3f3'
   },
-  borderTop: props.dragOver ? 'dashed 1px black':'',
+  borderTop: props.dragOver ? 'dashed 1px black' : '',
 }));
 
 const flatPointsToPoints = (poinst: number[]) => {
@@ -285,7 +285,7 @@ class PolygonsListItem extends React.Component<{ item: Polygon, index: number, s
   static anyDragged = false;
   constructor(props: any) {
     super(props);
-    this.state = { dragOver: false , dragging: false};
+    this.state = { dragOver: false, dragging: false };
   }
 
   onDragStart = (e) => {
@@ -619,8 +619,8 @@ var center = (arr) => {
 }
 
 function startDrag(evt, touch) {
-  evt.preventDefault();
   if (evt.target.classList.contains('draggable')) {
+    evt.preventDefault();
     selectedElement = evt.target;
     if (touch) {
       let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
@@ -872,7 +872,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
   movePolygon = (from, to) => {
     let res = [...this.state.polygons]
-    res.splice(to,0,res.splice(from,1)[0]);
+    res.splice(to, 0, res.splice(from, 1)[0]);
     this.setState({
       polygons: res
     });
