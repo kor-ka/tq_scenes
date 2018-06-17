@@ -393,7 +393,8 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
         overflowY: 'scroll',
         maxHeight: '100%',
         width: 248,
-        zIndex: 1
+        zIndex: 1,
+        background: 'white'
       }}>
         <Input value={res.name} onChange={(v: any) => {
           res.name = v.target.value;
@@ -463,7 +464,8 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
         overflowY: 'scroll',
         maxHeight: '100%',
         marginBottom: 0,
-        zIndex: 1
+        zIndex: 1,
+        background: 'white'
       }}>
         <Field>
           name:
@@ -623,8 +625,8 @@ function startDrag(evt, touch) {
     evt.preventDefault();
     selectedElement = evt.target;
     if (touch) {
-      let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
-      let y = evt.targetTouches[0].screenY * window.devicePixelRatio;
+      let x = evt.targetTouches[0].pageX * window.devicePixelRatio;
+      let y = evt.targetTouches[0].pageY * window.devicePixelRatio;
       offset = { x: x, y: y };
     } else {
       offset = getMousePosition(evt);
@@ -650,8 +652,8 @@ function drag(evt) {
 }
 
 function dragTouch(evt) {
-  let x = evt.targetTouches[0].screenX * window.devicePixelRatio;
-  let y = evt.targetTouches[0].screenY * window.devicePixelRatio;
+  let x = evt.targetTouches[0].pageX * window.devicePixelRatio;
+  let y = evt.targetTouches[0].pageY * window.devicePixelRatio;
   if (selectedElement) {
     evt.preventDefault();
     var coord = { x: x, y: y };
@@ -724,7 +726,7 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
 
   return (
 
-    <svg height="100%" width="100%" viewBox="0 0 600 600" ref={ref => makeDraggable(ref, selected, (id, x, y, s) => {
+    <svg style={{ overflow: 'visible' }} height="100%" width="100%" viewBox="0 0 600 600" ref={ref => makeDraggable(ref, selected, (id, x, y, s) => {
       if (selected === s) {
         let newPath = [...polygons.filter(p => p.id === selected)[0].points]
         newPath[id * 2] = x;
@@ -737,16 +739,16 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
       let newPath = selectedPolygonPonts.map((p, i) => p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
       dragCallback(selected, newPath);
     })} {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
-      {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
-      {border && <rect key='border1' id='border' x="1" y="1" width="598" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
       {polygonsReversed.map(polygon =>
         <polygon cursor={polygon.id === selected ? 'move' : 'default'} className={polygon.id === selected ? 'draggable' : undefined} key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} onClick={ref => onSelect ? onSelect((ref.target as any).id) : undefined} />
       )}
-      {dots}
       {middle && <rect key='middlev' id='middlev' x="200" y="0" width="200" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {middle && <rect key='middleh' id='middleh' x="0" y="200" width="600" height="200" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
       {middle && <rect key='middlev1' id='middlev' x="201" y="1" width="198" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
       {middle && <rect key='middleh2' id='middleh' x="1" y="201" width="598" height="198" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
+      {border && <rect key='border' id='border' x="0" y="0" width="600" height="600" fill="none" style={{ stroke: 'black', strokeWidth: 1 }} />}
+      {border && <rect key='border1' id='border' x="1" y="1" width="598" height="598" fill="none" style={{ stroke: 'white', strokeWidth: 1 }} />}
+      {dots}
     </svg>)
 }
 
@@ -888,7 +890,11 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
     return (
       <Root>
-        <Vertical style={{ padding: 16 }} >
+        <Vertical style={{
+          padding: 16,
+          zIndex: 1,
+          background: 'white'
+        }} >
           <Vertical style={{ flexGrow: 1 }} >
             <Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button>
             <Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button>
@@ -995,7 +1001,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
           })}
         </StyledScene>
-        <Vertical style={{ padding: 10, zIndex: 1 }}>
+        <Vertical style={{ padding: 10, zIndex: 1, background: 'white' }}>
           <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.blur)} onChange={() => { }} />blur </Horizontal>
           <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.fill)} onChange={() => { }} />fill </Horizontal>
           <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.grid)} onChange={() => { }} />grid </Horizontal>
