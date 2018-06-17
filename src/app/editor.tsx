@@ -138,7 +138,7 @@ const SidebarList = Glamorous.div({
   background: '#f7f7f7',
 });
 
-const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
+const SidebarListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
   padding: 16,
   display: 'flex',
   flexShrink: 0,
@@ -147,7 +147,8 @@ const SidebarListItemStyled = Glamorous.div<{ selected?: boolean }>(props => ({
   alignItems: 'center',
   ':hover': {
     background: '#f3f3f3'
-  }
+  },
+  borderTop: props.dragOver ? 'dashed 1px black':'',
 }));
 
 const flatPointsToPoints = (poinst: number[]) => {
@@ -279,19 +280,70 @@ let polygonFillScene = (p: Polygon) => {
   return { ...p, points: flatPoints }
 }
 
-class PolygonsListItem extends React.Component<{ item: Polygon, selected?: boolean, onClick: (id: string) => void }> {
+
+class PolygonsListItem extends React.Component<{ item: Polygon, index: number, selected?: boolean, onClick: (id: string) => void, move: (from: number, to: number) => void }, { dragOver: boolean, dragging: boolean }> {
+  static anyDragged = false;
+  constructor(props: any) {
+    super(props);
+    this.state = { dragOver: false , dragging: false};
+  }
+
+  onDragStart = (e) => {
+    PolygonsListItem.anyDragged = true;
+    e.dataTransfer.setData('from', this.props.index);
+    let tagget = e.target;
+    setTimeout(function () {
+      tagget.style.visibility = 'hidden';
+    }, 1);
+    this.setState({
+      dragging: true
+    });
+  }
+
+  onDragEnd = (e) => {
+    let tagget = e.target;
+    setTimeout(function () {
+      tagget.style.visibility = '';
+    }, 1);
+    this.setState({
+      dragging: false
+    });
+  }
+
+  onDragOver = (e) => {
+    e.preventDefault();
+    if (!this.state.dragging) {
+      this.setState({ dragOver: true });
+    }
+  }
+
+  onDragLeave = (e) => {
+    this.setState({ dragOver: false })
+  }
+
+  onDrop = (e) => {
+    e.preventDefault();
+    var index = e.dataTransfer.getData('from');
+    console.warn(index, this.props.index)
+    this.props.move(index, this.props.index)
+    this.setState({ dragOver: false })
+  }
+
   render() {
     return (
-      <SidebarListItemStyled onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-        <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }} >
-          <div>{this.props.item.name}</div>
-        </Vertical>
-        <div style={{ height: 48, width: 48 }}>
-          <StyledScene blur={false} grid={true}>
-            {polygonsToSvg([polygonFillScene(this.props.item)])}
-          </StyledScene>
-        </div>
-      </SidebarListItemStyled>
+      <Vertical onDragStart={this.onDragStart} onDragEnd={this.onDragEnd} onDragLeave={this.onDragLeave} onDragOver={this.onDragOver} onDrop={this.onDrop}>
+        <SidebarListItemStyled dragOver={this.state.dragOver && PolygonsListItem.anyDragged} draggable={true} onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
+
+          <Vertical style={{ width: 'calc(100% - 48px)', overflow: 'hidden' }} >
+            <div>{this.props.item.name}</div>
+          </Vertical>
+          <div style={{ height: 48, width: 48 }}>
+            <StyledScene blur={false} grid={true}>
+              {polygonsToSvg([polygonFillScene(this.props.item)])}
+            </StyledScene>
+          </div>
+        </SidebarListItemStyled>
+      </Vertical>
     );
   }
 }
@@ -325,7 +377,7 @@ function hexToG(h) { return parseInt((cutHex(h)).substring(2, 4), 16) }
 function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
 function cutHex(h) { return (h.charAt(0) == "#") ? h.substring(1, 7) : h }
 
-class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void, copy: (id: string) => void, move: (id: string, from: number, to: number) => void, isLast: boolean, index: number }> {
+class PolygonFullItem extends React.Component<{ item: Polygon, animations: Animation[], submit: (item: Polygon) => void, delete: (id: string) => void, copy: (id: string) => void, move: (from: number, to: number) => void, isLast: boolean, index: number }> {
 
 
   render() {
@@ -374,11 +426,11 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
         {/* <Horizontal>path: {this.props.item.points.join(" ")}</Horizontal> */}
         <Horizontal >
           <Button onClick={() => {
-            this.props.move(this.props.item.id, this.props.index, this.props.index - 1);
+            this.props.move(this.props.index, this.props.index - 1);
           }} disabled={this.props.index === 0}> <i className="material-icons">flip_to_front</i> </Button>
           <Button onClick={() => {
 
-            this.props.move(this.props.item.id, this.props.index, this.props.index + 1);
+            this.props.move(this.props.index, this.props.index + 1);
           }} disabled={this.props.isLast}> <i className="material-icons">flip_to_back</i> </Button>
           <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i></Button>
 
@@ -567,6 +619,7 @@ var center = (arr) => {
 }
 
 function startDrag(evt, touch) {
+  evt.preventDefault();
   if (evt.target.classList.contains('draggable')) {
     selectedElement = evt.target;
     if (touch) {
@@ -817,6 +870,14 @@ export class SceneEditor extends React.Component<{}, EditorState> {
 
   }
 
+  movePolygon = (from, to) => {
+    let res = [...this.state.polygons]
+    res.splice(to,0,res.splice(from,1)[0]);
+    this.setState({
+      polygons: res
+    });
+  }
+
   render() {
     let selectedPIndex = -1;
     let selectedP = this.state.polygons.filter((p, i) => {
@@ -885,7 +946,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             </Vertical>
             {this.state.tab === 'polygons' && this.state.polygons.map((p, i) =>
               <PolygonsListItem
-
+                index={i}
+                move={this.movePolygon}
                 key={p.id}
                 item={p}
                 onClick={id => {
@@ -908,13 +970,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <PolygonFullItem
             index={selectedPIndex}
             isLast={selectedPIndex === this.state.polygons.length - 1}
-            move={(id, from, to) => {
-              let res = [...this.state.polygons]
-              res.splice(from, 0, res.splice(to, 1)[0])
-              this.setState({
-                polygons: res
-              });
-            }}
+            move={this.movePolygon}
             animations={this.state.animations} item={selectedP} copy={toCopy => {
               let res = [...this.state.polygons];
               let id = 'polygon_' + new Date().getTime();
