@@ -627,8 +627,8 @@ function startDrag(evt, touch) {
     evt.preventDefault();
     selectedElement = evt.target;
     if (touch) {
-      let x = evt.targetTouches[0].pageX * window.devicePixelRatio;
-      let y = evt.targetTouches[0].pageY * window.devicePixelRatio;
+      let x = evt.targetTouches[0].clientX * window.devicePixelRatio;
+      let y = evt.targetTouches[0].clientY * window.devicePixelRatio;
       offset = { x: x, y: y };
     } else {
       offset = getMousePosition(evt);
@@ -654,8 +654,8 @@ function drag(evt) {
 }
 
 function dragTouch(evt) {
-  let x = evt.targetTouches[0].pageX * window.devicePixelRatio;
-  let y = evt.targetTouches[0].pageY * window.devicePixelRatio;
+  let x = evt.targetTouches[0].clientX * window.devicePixelRatio;
+  let y = evt.targetTouches[0].clientY * window.devicePixelRatio;
   if (selectedElement) {
     evt.preventDefault();
     var coord = { x: x, y: y };
@@ -678,7 +678,10 @@ function applyDrag(coord, final?: boolean) {
 }
 
 function endDrag(evt) {
-  applyDrag(lastCoords, true)
+  if(lastCoords){
+    applyDrag(lastCoords, true)
+  }
+  lastCoords = null;
   selectedElement = null;
 }
 
@@ -755,7 +758,7 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
     </svg>)
 }
 
-const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: string) => {
+const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: string, dragCircles?: boolean) => {
   let animationsKeyframes: any = {};
   let animations: any = {};
   for (let a of anims) {
@@ -773,11 +776,9 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
         transform: s.translate ? 'translate3d(' + s.translate.x + '%, ' + s.translate.y * -1 + '%, 0)' : undefined,
       }
 
-      // adding this boolshit just to restart animation = sync polygon animation with dots
-      if (selectedPolygonId) {
-        keyframes[selectedPolygonId] = {
-          opacity: 0,
-        }
+      // adding this boolshit just to restart animation => sync polygon animation with dots
+      keyframes[selectedPolygonId + '_' + dragCircles] = {
+        opacity: 0,
       }
     }
     animationsKeyframes[a.id] = glamor.keyframes({
@@ -1047,7 +1048,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
         <StyledScene style={{
           flexGrow: 1,
-        }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
+        }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP, this.state.dragCircles) : undefined}>
           {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id, selectPSource: 'scene' }) }, (changedPolygonId, newPath, final) => {
             let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
             changed.points = newPath;
