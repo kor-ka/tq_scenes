@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import * as glamor from 'glamor';
 import Glamorous from 'glamorous';
 import { SketchPicker as SketchPickerRaw } from 'react-color';
@@ -591,6 +592,7 @@ class EditorState {
   grid: boolean;
   middle?: boolean;
   selectedP?: string;
+  selectPSource?: 'list' | 'scene';
   selectedA?: string;
   polygons: Polygon[];
   animations: Animation[];
@@ -830,6 +832,19 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     };
   }
 
+  componentWillUpdate(nextPros: {}, nexState: EditorState) {
+    let scrollToSelected = nexState.selectedP != this.state.selectedP && nexState.selectPSource === 'scene';
+
+    if (scrollToSelected) {
+      let polygonListItemElement = ReactDOM.findDOMNode(this.refs['polygonListItem_' + nexState.selectedP])
+      let sidebar = ReactDOM.findDOMNode(this.refs.sidebar)
+      if(sidebar && polygonListItemElement){
+        sidebar.scrollTo(0, sidebar.scrollTop + polygonListItemElement.getBoundingClientRect().top - 1);
+        this.setState({selectPSource: undefined});
+      }
+    }
+  }
+
   componentDidUpdate() {
     window.localStorage.setItem('polygons', JSON.stringify(this.state.polygons));
     window.localStorage.setItem('animations', JSON.stringify(this.state.animations));
@@ -907,7 +922,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           zIndex: 1,
         }}>
 
-          <SidebarList>
+          <SidebarList ref='sidebar'>
             <Vertical>
               <Button style={{ margin: 16 }} onClick={() => {
                 if (this.state.tab === 'animations') {
@@ -952,6 +967,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             </Vertical>
             {this.state.tab === 'polygons' && this.state.polygons.map((p, i) =>
               <PolygonsListItem
+                ref={'polygonListItem_' + p.id}
                 index={i}
                 move={this.movePolygon}
                 key={p.id}
@@ -977,7 +993,9 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             index={selectedPIndex}
             isLast={selectedPIndex === this.state.polygons.length - 1}
             move={this.movePolygon}
-            animations={this.state.animations} item={selectedP} copy={toCopy => {
+            animations={this.state.animations} 
+            item={selectedP} 
+            copy={toCopy => {
               let res = [...this.state.polygons];
               let id = 'polygon_' + new Date().getTime();
               let original = this.state.polygons.filter(p => p.id === toCopy)[0];
@@ -995,7 +1013,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         <StyledScene style={{
           flexGrow: 1,
         }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
-          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id }) }, (changedPolygonId, newPath) => {
+          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id, selectPSource: 'scene' }) }, (changedPolygonId, newPath) => {
             let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
             changed.points = newPath;
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
