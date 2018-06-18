@@ -583,7 +583,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
 
 class EditorState {
-  tab: 'polygons' | 'animations';
+  tab: 'polygons' | 'animations' | 'settings';
   blur?: boolean;
   fill?: boolean;
   animate: boolean;
@@ -678,7 +678,7 @@ function applyDrag(coord, final?: boolean) {
 }
 
 function endDrag(evt) {
-  if(lastCoords){
+  if (lastCoords) {
     applyDrag(lastCoords, true)
   }
   lastCoords = null;
@@ -947,6 +947,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <Vertical style={{ flexGrow: 1 }} >
             <Button onClick={() => this.setState({ tab: "polygons" })} disabled={this.state.tab === 'polygons'} active={true}><i className="material-icons">layers</i></Button>
             <Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button>
+            <Button onClick={() => this.setState({ tab: "settings" })} disabled={this.state.tab === 'settings'} active={true}><i className="material-icons">settings</i></Button>
           </Vertical>
           <input style={{ opacity: 0, width: 1 }} type="file" id="file" onChange={this.import} />
           <Button onClick={this.undo} disabled={this.stateStack.length === 0 || this.undoPointer === 0}><i className="material-icons">undo</i></Button>
@@ -954,76 +955,79 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button>
           <Button onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
-        <SideBar style={{
-          zIndex: 1,
-        }}>
+        {(this.state.tab === 'polygons' || this.state.tab === 'animations') && (
+          <SideBar style={{
+            zIndex: 1,
+          }}>
 
-          <SidebarList ref='sidebar'>
-            <Vertical>
-              <Button style={{ margin: 16 }} onClick={() => {
-                if (this.state.tab === 'animations') {
-                  let id = 'animation_' + new Date().getTime();
-                  this.state.animations.unshift({
-                    id: id,
-                    name: 'animation',
-                    steps: [{
-                      timing: 0,
-                      opacity: 0,
-                    },
-                    {
-                      timing: 50,
-                      opacity: 1,
-                    },
-                    {
-                      timing: 100,
-                      opacity: 0,
-                    }],
-                    time: 5
-                  })
+            <SidebarList ref='sidebar'>
+              <Vertical>
+                <Button style={{ margin: 16 }} onClick={() => {
+                  if (this.state.tab === 'animations') {
+                    let id = 'animation_' + new Date().getTime();
+                    this.state.animations.unshift({
+                      id: id,
+                      name: 'animation',
+                      steps: [{
+                        timing: 0,
+                        opacity: 0,
+                      },
+                      {
+                        timing: 50,
+                        opacity: 1,
+                      },
+                      {
+                        timing: 100,
+                        opacity: 0,
+                      }],
+                      time: 5
+                    })
+                    this.setState({
+                      animations: this.state.animations,
+                      selectedA: id,
+                    })
+                  }
+                  if (this.state.tab === 'polygons') {
+                    let id = 'polygon_' + new Date().getTime();
+                    this.state.polygons.unshift({
+                      id: id,
+                      name: 'polygon',
+                      points: [200, 200, 400, 200, 400, 400, 200, 400],
+                      fill: '#03FF00',
+                    })
+                    this.setState({
+                      polygons: this.state.polygons,
+                      selectedP: id,
+                    })
+                  }
+
+                }}><i className="material-icons">add</i> </Button>
+              </Vertical>
+              {this.state.tab === 'polygons' && this.state.polygons.map((p, i) =>
+                <PolygonsListItem
+                  ref={'polygonListItem_' + p.id}
+                  index={i}
+                  move={this.movePolygon}
+                  key={p.id}
+                  item={p}
+                  onClick={id => {
+                    this.setState({
+                      selectedP: id
+                    })
+                  }}
+                  selected={this.state.selectedP === p.id} />)}
+
+              {this.state.tab === 'animations' && this.state.animations.map(p =>
+                <AnimationListItem key={p.id} item={p} onClick={id => {
                   this.setState({
-                    animations: this.state.animations,
-                    selectedA: id,
+                    selectedA: id
                   })
-                }
-                if (this.state.tab === 'polygons') {
-                  let id = 'polygon_' + new Date().getTime();
-                  this.state.polygons.unshift({
-                    id: id,
-                    name: 'polygon',
-                    points: [200, 200, 400, 200, 400, 400, 200, 400],
-                    fill: '#03FF00',
-                  })
-                  this.setState({
-                    polygons: this.state.polygons,
-                    selectedP: id,
-                  })
-                }
+                }} selected={this.state.selectedA === p.id} />)}
 
-              }}><i className="material-icons">add</i> </Button>
-            </Vertical>
-            {this.state.tab === 'polygons' && this.state.polygons.map((p, i) =>
-              <PolygonsListItem
-                ref={'polygonListItem_' + p.id}
-                index={i}
-                move={this.movePolygon}
-                key={p.id}
-                item={p}
-                onClick={id => {
-                  this.setState({
-                    selectedP: id
-                  })
-                }}
-                selected={this.state.selectedP === p.id} />)}
+            </SidebarList>
+          </SideBar>
+        )}
 
-            {this.state.tab === 'animations' && this.state.animations.map(p =>
-              <AnimationListItem key={p.id} item={p} onClick={id => {
-                this.setState({
-                  selectedA: id
-                })
-              }} selected={this.state.selectedA === p.id} />)}
-
-          </SidebarList>
-        </SideBar>
         {this.state.tab === 'polygons' && selectedP &&
           <PolygonFullItem
             index={selectedPIndex}
@@ -1046,6 +1050,17 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             res.unshift({ ...original, id: id, steps: original.steps.map(s => ({ ...s, translate: { ...s.translate } })) });
             this.setState({ animations: res, selectedA: id });
           }} item={selectedA} delete={toDelete => this.setState({ animations: this.state.animations.filter(p => p.id !== toDelete) })} submit={(changed) => this.setState({ animations: [...this.state.animations].map(old => old.id === changed.id ? changed : old) })} />}
+        {this.state.tab === 'settings' && (
+          <Vertical style={{ padding: 10, zIndex: 1, background: 'white' }}>
+            <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.blur)} onChange={() => { }} />blur </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.fill)} onChange={() => { }} />fill </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.grid)} onChange={() => { }} />grid </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.border)} onChange={() => { }} />scene bounds </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.middle)} onChange={() => { }} />middle bounds </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.animate)} onChange={() => { }} />animate </Horizontal>
+            <Horizontal onClick={() => this.switchFlag('dragCircles')}><Input key="dragCircles" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.dragCircles)} onChange={() => { }} />dragCircles </Horizontal>
+          </Vertical>
+        )}
         <StyledScene style={{
           flexGrow: 1,
         }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP, this.state.dragCircles) : undefined}>
@@ -1056,16 +1071,6 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
           })}
         </StyledScene>
-        <Vertical style={{ padding: 10, zIndex: 1, background: 'white' }}>
-          <Horizontal onClick={() => this.switchFlag('blur')}><Input key="blur" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.blur)} onChange={() => { }} />blur </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('fill')}><Input key="fill" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.fill)} onChange={() => { }} />fill </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('grid')}><Input key="grid" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.grid)} onChange={() => { }} />grid </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('border')}><Input key="border" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.border)} onChange={() => { }} />scene bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('middle')}><Input key="middle" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.middle)} onChange={() => { }} />middle bounds </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.animate)} onChange={() => { }} />animate </Horizontal>
-          <Horizontal onClick={() => this.switchFlag('dragCircles')}><Input key="dragCircles" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.dragCircles)} onChange={() => { }} />dragCircles </Horizontal>
-        </Vertical>
-
       </Root >
     );
   }
