@@ -599,7 +599,7 @@ class EditorState {
 }
 
 // TODO extract to class
-var svg, selectedElement, offset, dargCircle, dargPolygon, selectedParselId, polygonCenter;
+var svg, selectedElement, offset, dargCircle, dargPolygon, selectedParselId, polygonCenter, lastCoords;
 
 function getMousePosition(evt) {
   var CTM = svg.getScreenCTM();
@@ -666,22 +666,23 @@ function dragTouch(evt) {
   }
 }
 
-function applyDrag(coord) {
+function applyDrag(coord, final?: boolean) {
   if (selectedElement.tagName === 'circle') {
     // Math.max(0, Math.min(coord.x - offset.x, 600)), Math.max(0, Math.min(coord.y - offset.y, 600))
-    dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), coord.x - offset.x, coord.y - offset.y, selectedParselId);
+    dargCircle(parseInt(selectedElement.getAttributeNS(null, "id").split('_point_')[1]), coord.x - offset.x, coord.y - offset.y, selectedParselId, final);
   } else if (selectedElement.tagName === 'polygon') {
     let newCenter = { x: coord.x - offset.x, y: coord.y - offset.y }
-    dargPolygon(selectedParselId, { x: newCenter.x, y: newCenter.y });
+    dargPolygon(selectedParselId, { x: newCenter.x, y: newCenter.y }, final);
   }
-
+  lastCoords = coord;
 }
 
 function endDrag(evt) {
+  applyDrag(lastCoords, true)
   selectedElement = null;
 }
 
-function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: number, x: number, y: number, selected: string) => void, dargPolygonCallback: (id: string, newCenter: { x: number, y: number }) => void) {
+function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: number, x: number, y: number, selected: string, final: boolean) => void, dargPolygonCallback: (id: string, newCenter: { x: number, y: number }, final: boolean) => void) {
   svg = target;
   selectedParselId = parselId;
   dargCircle = dargCircleCallback;
@@ -708,7 +709,7 @@ function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: nu
   svg.addEventListener('touchend', endDrag);
 }
 
-const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, dragCircles?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[]) => void) => {
+const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, dragCircles?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[], final: boolean) => void) => {
   let polygonsReversed = [...polygons].reverse();
 
   let dots = []
@@ -728,18 +729,18 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
 
   return (
 
-    <svg style={{ overflow: 'visible' }} height="100%" width="100%" viewBox="0 0 600 600" ref={ref => makeDraggable(ref, selected, (id, x, y, s) => {
+    <svg style={{ overflow: 'visible' }} height="100%" width="100%" viewBox="0 0 600 600" ref={ref => makeDraggable(ref, selected, (id, x, y, s, final) => {
       if (selected === s) {
         let newPath = [...polygons.filter(p => p.id === selected)[0].points]
         newPath[id * 2] = x;
         newPath[id * 2 + 1] = y;
-        dragCallback(selected, newPath);
+        dragCallback(selected, newPath, final);
       }
-    }, (selected: string, newCenter: { x: number, y: number }) => {
+    }, (selected: string, newCenter: { x: number, y: number }, final) => {
       let selectedPolygonPonts = polygons.filter(p => p.id === selected)[0].points;
       let oldCenter = center(flatPointsToPoints(selectedPolygonPonts));
       let newPath = selectedPolygonPonts.map((p, i) => p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
-      dragCallback(selected, newPath);
+      dragCallback(selected, newPath, final);
     })} {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
       {polygonsReversed.map(polygon =>
         <polygon cursor={polygon.id === selected ? 'move' : 'default'} className={polygon.id === selected ? 'draggable' : undefined} key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} onClick={ref => onSelect ? onSelect((ref.target as any).id) : undefined} />
@@ -808,7 +809,7 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
 export class SceneEditor extends React.Component<{}, EditorState> {
   stateStack = [];
   undoPointer = 0;
-  fromUndoRedo = false;
+  preventStackState = false;
   constructor(props: EditorState) {
     super(props);
 
@@ -839,7 +840,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   componentWillUpdate(nextPros: {}, nexState: EditorState) {
     let scrollToSelected = nexState.selectedP != this.state.selectedP && nexState.selectPSource === 'scene';
 
-    if (!this.fromUndoRedo && (nexState.animations !== this.state.animations || nexState.polygons !== this.state.polygons)) {
+    if (!this.preventStackState && (nexState.animations !== this.state.animations || nexState.polygons !== this.state.polygons)) {
       if (this.undoPointer < this.stateStack.length - 1 && this.stateStack.length > 0) {
         this.stateStack.splice(this.undoPointer + 1, this.stateStack.length - this.undoPointer);
       }
@@ -850,7 +851,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       this.undoPointer = this.stateStack.length - 1;
       console.warn(this.undoPointer, this.stateStack);
     }
-    this.fromUndoRedo = false;
+    this.preventStackState = false;
 
     if (scrollToSelected) {
       let polygonListItemElement = ReactDOM.findDOMNode(this.refs['polygonListItem_' + nexState.selectedP])
@@ -913,14 +914,14 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   }
 
   undo = () => {
-    this.fromUndoRedo = true;
+    this.preventStackState = true;
     this.setState({
       ...this.stateStack[--this.undoPointer]
     })
   }
 
   redo = () => {
-    this.fromUndoRedo = true;
+    this.preventStackState = true;
     console.warn(this.undoPointer)
     this.setState({
       ...this.stateStack[++this.undoPointer]
@@ -1047,9 +1048,10 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         <StyledScene style={{
           flexGrow: 1,
         }} blur={this.state.blur} grid={this.state.grid} animation={this.state.animate ? animation(this.state.animations, this.state.polygons, this.state.selectedP) : undefined}>
-          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id, selectPSource: 'scene' }) }, (changedPolygonId, newPath) => {
+          {polygonsToSvg(this.state.polygons, this.state.fill, this.state.border, this.state.middle, this.state.dragCircles, this.state.selectedP, (id) => { this.setState({ selectedP: id, selectPSource: 'scene' }) }, (changedPolygonId, newPath, final) => {
             let changed = { ...this.state.polygons.filter(p => p.id === changedPolygonId)[0] };
             changed.points = newPath;
+            this.preventStackState = !final;
             this.setState({ polygons: [...this.state.polygons].map(old => old.id === changedPolygonId ? changed : old) })
           })}
         </StyledScene>
