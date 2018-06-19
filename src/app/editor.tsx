@@ -806,6 +806,9 @@ const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: 
 }
 
 export class SceneEditor extends React.Component<{}, EditorState> {
+  stateStack = [];
+  undoPointer = 0;
+  fromUndoRedo = false;
   constructor(props: EditorState) {
     super(props);
 
@@ -830,17 +833,31 @@ export class SceneEditor extends React.Component<{}, EditorState> {
       animate: true,
       ...editorState
     };
+    this.stateStack.push({ polygons: this.state.polygons, animations: this.state.animations });
   }
 
   componentWillUpdate(nextPros: {}, nexState: EditorState) {
     let scrollToSelected = nexState.selectedP != this.state.selectedP && nexState.selectPSource === 'scene';
 
+    if (!this.fromUndoRedo && (nexState.animations !== this.state.animations || nexState.polygons !== this.state.polygons)) {
+      if (this.undoPointer < this.stateStack.length - 1 && this.stateStack.length > 0) {
+        this.stateStack.splice(this.undoPointer + 1, this.stateStack.length - this.undoPointer);
+      }
+
+      // TODO limit stack
+      this.stateStack.push({ polygons: nexState.polygons, animations: nexState.animations });
+
+      this.undoPointer = this.stateStack.length - 1;
+      console.warn(this.undoPointer, this.stateStack);
+    }
+    this.fromUndoRedo = false;
+
     if (scrollToSelected) {
       let polygonListItemElement = ReactDOM.findDOMNode(this.refs['polygonListItem_' + nexState.selectedP])
       let sidebar = ReactDOM.findDOMNode(this.refs.sidebar)
-      if(sidebar && polygonListItemElement){
+      if (sidebar && polygonListItemElement) {
         sidebar.scrollTo(0, sidebar.scrollTop + polygonListItemElement.getBoundingClientRect().top - 1);
-        this.setState({selectPSource: undefined});
+        this.setState({ selectPSource: undefined });
       }
     }
   }
@@ -895,6 +912,21 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     });
   }
 
+  undo = () => {
+    this.fromUndoRedo = true;
+    this.setState({
+      ...this.stateStack[--this.undoPointer]
+    })
+  }
+
+  redo = () => {
+    this.fromUndoRedo = true;
+    console.warn(this.undoPointer)
+    this.setState({
+      ...this.stateStack[++this.undoPointer]
+    })
+  }
+
   render() {
     let selectedPIndex = -1;
     let selectedP = this.state.polygons.filter((p, i) => {
@@ -915,6 +947,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             <Button onClick={() => this.setState({ tab: "animations" })} disabled={this.state.tab === 'animations'} active={true}><i className="material-icons">movie_filter</i></Button>
           </Vertical>
           <input style={{ opacity: 0, width: 1 }} type="file" id="file" onChange={this.import} />
+          <Button onClick={this.undo} disabled={this.stateStack.length === 0 || this.undoPointer === 0}><i className="material-icons">undo</i></Button>
+          <Button onClick={this.redo} disabled={this.undoPointer === this.stateStack.length - 1}><i className="material-icons">redo</i></Button>
           <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button>
           <Button onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
@@ -993,8 +1027,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             index={selectedPIndex}
             isLast={selectedPIndex === this.state.polygons.length - 1}
             move={this.movePolygon}
-            animations={this.state.animations} 
-            item={selectedP} 
+            animations={this.state.animations}
+            item={selectedP}
             copy={toCopy => {
               let res = [...this.state.polygons];
               let id = 'polygon_' + new Date().getTime();
