@@ -66,7 +66,7 @@ const Input = Glamorous.input({
   backgroundColor: 'transparent'
 });
 
-const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
+export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'row',
@@ -91,7 +91,7 @@ const Field = Glamorous(Horizontal)({
   justifyContent: 'space-between',
 });
 
-const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
+export const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'column',
