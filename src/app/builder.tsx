@@ -183,11 +183,16 @@ class TimeLine {
         let dummy16 = new Episode('dummy16');
         dummy10.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy16', dummy16.id) });
 
+        dummy16.reactionReasolvers.push({ reaction: new ReactionClosedText('root', this.root.id) });
+
+
         let episodes = [this.root, dummy, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, dummy9, dummy10, dummy11, dummy12, dummy13, dummy14, dummy15, dummy16];
 
-        this.root.id = 'episode_root';
         this.map = {};
 
+        let references: { [key: string]: any } = {};
+
+        // default layout
         let w = 2;
         let h = 2;
         let nextLayer = [{ element: this.root, layer: 0, x: 0 }];
@@ -195,17 +200,25 @@ class TimeLine {
         let nextLayerX = 0;
         while (nextLayer.length !== 0) {
             let node = nextLayer.shift();
+            //prevent loop reference
+            if (references[node.element.id]) {
+                continue;
+            }
+            references[node.element.id] = node.element;
+
             nextLayerX = lastLayer === node.layer ? nextLayerX : 0;
-            console.warn(node.element);
             for (let reaction of node.element.reactionReasolvers) {
                 if (reaction.reaction.nextEpisode) {
+
                     let target = episodes.filter(e => e.id === reaction.reaction.nextEpisode)[0];
+                    console.warn(reaction.reaction.nextEpisode, references[reaction.reaction.nextEpisode]);
                     if (target) {
                         nextLayer.push({ element: target, layer: node.layer + 1, x: nextLayerX++ });
                     }
+
                 }
             }
-            this.map[node.element.id] = { x: node.x * w + nextLayerX, y: node.layer * h * 2, w: w, h: h, episode: node.element };
+            this.map[node.element.id] = { x: node.x * w + nextLayerX, y: node.layer * h * 1.5, w: w, h: h, episode: node.element };
 
             lastLayer = node.layer;
 
@@ -247,11 +260,14 @@ class EpisodeComponent extends React.Component<{ episode: Episode }>{
     }
 }
 
+const Grid = Glamorous(ReactGridLayout)({
+});
+
 export class Builder extends React.Component<{}, BuilderState>{
     episodesComponents: { [id: string]: EpisodeComponent } = {};
     lines = [];
     layoutChangeTimeout: any;
-    timelimeNode?: Element;
+    gridNode?: Element;
     constructor(props: any) {
         super(props);
         this.state = {
@@ -283,7 +299,6 @@ export class Builder extends React.Component<{}, BuilderState>{
             return;
         }
         this.episodesComponents[e.props.episode.id] = e;
-        this.lines = this.renderLines();
 
         this.setState({
             episodesComponents: this.episodesComponents
@@ -298,15 +313,59 @@ export class Builder extends React.Component<{}, BuilderState>{
                 if (reactionResolver.reaction.nextEpisode) {
                     let target = this.state.episodesComponents[reactionResolver.reaction.nextEpisode];
                     if (target && target.element && episodeComponent.element) {
+                        let offset = episodeComponent.element.parentElement.parentElement.parentElement.scrollTop;
                         let rectFrom = episodeComponent.element.getBoundingClientRect();
                         let rectTo = target.element.getBoundingClientRect();
-                        let xf = rectFrom.right - rectFrom.width / 2;
-                        let yf = rectFrom.bottom;
 
-                        let xt = rectTo.right - rectTo.width / 2;
-                        let yt = rectTo.top;
+                        if (rectTo.top > rectFrom.top) {
+                            let xf = rectFrom.right - rectFrom.width / 2;
+                            let yf = rectFrom.bottom + offset;
 
-                        lines.push(<line x1={xf} y1={yf} x2={xt} y2={yt} style={{ stroke: 'rgb(255,0,0)', strokeWidth: 2 }} />);
+                            let xt = rectTo.right - rectTo.width / 2;
+                            let yt = rectTo.top + offset;
+
+
+                            let xm1 = rectFrom.right - rectFrom.width / 2;
+                            let ym1 = rectFrom.bottom + ((yt - yf) / 2) + offset;
+
+                            let xm2 = xt;
+                            let ym2 = ym1;
+
+                            lines.push(<polyline points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xt} ${yt}`} fill="none" style={{ stroke: 'blue', strokeWidth: rectFrom.width / 10, opacity: 0.5 }} />);
+
+                        } else {
+                            let xf = rectFrom.right - rectFrom.width / 2;
+                            let yf = rectFrom.bottom + offset;
+
+                            let xt = rectTo.right - rectTo.width / 2;
+                            let yt = rectTo.top + offset;
+
+
+                            let xm1 = xf;
+                            let ym1 = yf + rectFrom.height / 10;
+
+                            let xm2 = xm1 + rectFrom.width / 1.5 * (rectFrom.left < rectTo.left ? 1 : -1);
+                            let ym2 = ym1;
+
+                            let xm3 = xm2;
+                            let ym3 = yt - rectTo.height / 10;
+
+                            let xm4 = xt;
+                            let ym4 = ym3;
+
+
+
+                            lines.push(<polyline points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xm3} ${ym3} ${xm4} ${ym4} ${xt} ${yt}`} fill="none" style={{ stroke: 'green', strokeWidth: rectFrom.width / 10, opacity: 0.5 }} />);
+
+                        }
+
+
+
+
+
+
+
+
                     }
                 }
             }
@@ -331,17 +390,16 @@ export class Builder extends React.Component<{}, BuilderState>{
         this.updateLinesLayout();
     }
 
-    onTimelineCreated = (e: ReactGridLayout) => {
+    onGridCreated = (e: ReactGridLayout) => {
         if (e === null) {
             return;
         }
-        this.timelimeNode = ReactDOM.findDOMNode(e)
-        this.updateLinesLayout();
+        this.gridNode = ReactDOM.findDOMNode(e)
     }
 
     updateLinesLayout = () => {
-        if (this.timelimeNode) {
-            this.setState({ timelineHeight: this.timelimeNode.getBoundingClientRect().height });
+        if (this.gridNode) {
+            this.setState({ timelineHeight: this.gridNode.getBoundingClientRect().height });
         }
     }
 
@@ -363,35 +421,41 @@ export class Builder extends React.Component<{}, BuilderState>{
         }
 
         return (
-            <>
-                <svg style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: this.state.windowWidth,
-                    height: this.state.timelineHeight,
-                    backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
-                    backgroundSize: '16px 16px'
-                }}>
-                    {this.lines}
-                </svg>
-                <ReactGridLayout
-                    ref={this.onTimelineCreated}
-                    className="layout"
-                    layout={layout}
-                    cols={20}
-                    rowHeight={30}
-                    width={this.state.windowWidth}
-                    compactType={null}
-                    onResize={this.onLayoutChange}
-                    onLayoutChange={this.onLayoutChange}
-                    onResizeStop={this.onLayoutChange}
-                    onDrag={this.onLayoutChange}
-                    onDragStop={this.onLayoutChange}>
-                    {episodeComponents}
+            <Vertical height='100vh' >
+                <div style={{ overflowY: 'scroll', height: '60%', position: 'relative' }}>
+                    <svg style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: this.state.windowWidth,
+                        height: this.state.timelineHeight,
+                        backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
+                        backgroundSize: '16px 16px'
+                    }}>
+                        {this.lines}
+                    </svg>
+                    <Grid
+                        ref={this.onGridCreated}
+                        className="layout"
+                        layout={layout}
+                        cols={20}
+                        rowHeight={30}
+                        width={this.state.windowWidth}
+                        compactType={null}
+                        preventCollision={true}
+                        onResize={this.onLayoutChange}
+                        onLayoutChange={this.onLayoutChange}
+                        onResizeStop={this.onLayoutChange}
+                        onDrag={this.onLayoutChange}
+                        onDragStop={this.onLayoutChange}>
+                        {episodeComponents}
 
-                </ReactGridLayout>
-            </>
+                    </Grid>
+                </div>
+
+                <div style={{ backgroundColor: 'gray' }}>
+                </div>
+            </ Vertical>
         )
     }
 }
