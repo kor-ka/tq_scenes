@@ -206,7 +206,7 @@ class EpisodeComponent extends React.Component<{ episode: Episode }>{
 
     render() {
         return (
-            <EpisodeDiv innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
+            <EpisodeDiv draggable={true} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
                 {this.props.episode.name}
             </EpisodeDiv>
         );
@@ -269,17 +269,17 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
                 if (reactionResolver.reaction.nextEpisode) {
                     let to = this.props.chapter.map[reactionResolver.reaction.nextEpisode];
                     let rectFrom = {
-                        left: ((from.x) * (episodeWidth + gridGap)) + 2,
-                        right: ((from.x) * (episodeWidth + gridGap)) + 2 + episodeWidth,
-                        top: ((from.y) * (episodeHeight + gridGap)) + 2,
-                        bottom: ((from.y) * (episodeHeight + gridGap)) + 2 + episodeHeight,
+                        left: ((from.x) * (episodeWidth + gridGap)) + 2 + gridGap / 2,
+                        right: ((from.x) * (episodeWidth + gridGap)) + 2 + episodeWidth + gridGap / 2,
+                        top: ((from.y) * (episodeHeight + gridGap)) + 2 + gridGap / 2,
+                        bottom: ((from.y) * (episodeHeight + gridGap)) + 2 + episodeHeight + gridGap / 2,
                     };
 
                     let rectTo = {
-                        left: ((to.x) * (episodeWidth + gridGap)) + 2,
-                        right: ((to.x) * (episodeWidth + gridGap)) + 2 + episodeWidth,
-                        top: ((to.y) * (episodeHeight + gridGap)) + 2,
-                        bottom: ((to.y) * (episodeHeight + gridGap)) + 2 + episodeHeight,
+                        left: ((to.x) * (episodeWidth + gridGap)) + 2 + gridGap / 2,
+                        right: ((to.x) * (episodeWidth + gridGap)) + 2 + episodeWidth + gridGap / 2,
+                        top: ((to.y) * (episodeHeight + gridGap)) + 2 + gridGap / 2,
+                        bottom: ((to.y) * (episodeHeight + gridGap)) + 2 + episodeHeight + gridGap / 2,
                     };
 
                     let xf = to.x === from.x ? (rectFrom.left + (rectFrom.right - rectFrom.left) / 2) : to.x > from.x ? rectFrom.right : rectFrom.left;
@@ -294,13 +294,35 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
                     let xm2 = xf + Math.abs(xf - xt) / 2;;
                     let ym2 = yt;
 
-
                     lines.push(<polyline key={'connect_' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: 'blue', strokeWidth: 10, opacity: 0.5 }} />);
                 }
             }
         }
 
         return lines;
+    }
+
+    dragPlaceholder: HTMLElement;
+
+    onDragPlaceholderCreated = (e) => {
+        this.dragPlaceholder = e;
+    }
+
+    onDragOver = (e) => {
+        e.preventDefault();
+
+        if (this.dragPlaceholder) {
+            let offsetx = e.target.parentElement.scrollLeft;
+            let offsety = e.target.parentElement.scrollTop;
+            let x = e.clientX + offsetx;
+            let y = e.clientY + offsety;
+
+            x = x - (x % (episodeWidth + gridGap)) + gridGap / 2;
+            y = y - (y % (episodeHeight + gridGap)) + gridGap / 2;
+
+            this.dragPlaceholder.style.left = String(x);
+            this.dragPlaceholder.style.top = String(y);
+        }
     }
 
     render() {
@@ -315,7 +337,7 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
 
         return (
 
-            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative' }} className={(this.props as any).className}>
+            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} className={(this.props as any).className}>
                 <svg style={{
                     position: 'absolute',
                     top: 0,
@@ -328,12 +350,24 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
                     backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
                     backgroundSize: '16px 16px'
                 }}>
+
+
                     {this.renderLines()}
                 </svg>
                 <Grid w={w} h={h}>
                     {items}
                 </Grid>
 
+                <div ref={this.onDragPlaceholderCreated} style={{
+                    top: 0,
+                    left: 0,
+                    position: 'absolute',
+                    border: '2px solid black',
+                    borderRadius: 5,
+                    width: 100,
+                    height: 100,
+                    zIndex: 2
+                }} />
             </div>
 
         );
