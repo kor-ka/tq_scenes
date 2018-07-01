@@ -117,7 +117,7 @@ class ReactionClosedText extends Reaction {
 
 class Episode {
     id: string;
-    name?: string;
+    name: string;
     defaultContent: Content;
     contentReasolvers?: { condition: Condition, content: Content }[];
     reactionReasolvers: { condition?: Condition, reaction: Reaction, actions?: Action[] }[];
@@ -131,65 +131,26 @@ class Episode {
 }
 
 class TimeLine {
-    map: { [episodeId: string]: { x: number, y: number, w: number, h: number, episode: Episode } }
+    map: { [episodeId: string]: { x: number, y: number, w: number, h: number, episode: Episode } } = {};
     root: Episode;
-    constructor() {
-        let dummy = new Episode('dummy');
-        this.root = new Episode('root', dummy.id);
+    dummy = () => {
+        this.root = new Episode('root');
 
-        let dummy2 = new Episode('dummy2');
-        this.root.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy2', dummy2.id) });
+        let parent = this.root;
+        for (let i = 0; i < 300; i++) {
+            let episode = new Episode('dummy_' + i);
+            parent.reactionReasolvers.push({ reaction: new ReactionClosedText('to_' + episode.name, episode.id) })
+            if (i % 3 === 0) {
+                parent = episode
+            }
+            this.map[episode.id] = { episode: episode, x: 0, y: 0, w: 0, h: 0 };
+        }
 
-        let dummy3 = new Episode('dummy3');
-        this.root.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy3', dummy3.id) });
+        return this;
 
+    }
 
-        let dummy4 = new Episode('dummy4');
-        dummy3.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy4', dummy4.id) });
-
-        let dummy5 = new Episode('dummy5');
-        dummy3.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy5', dummy5.id) });
-
-        let dummy6 = new Episode('dummy6');
-        dummy5.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy6', dummy6.id) });
-
-        let dummy7 = new Episode('dummy7');
-        dummy5.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy7', dummy7.id) });
-
-        let dummy8 = new Episode('dummy8');
-        dummy5.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy8', dummy8.id) });
-
-        let dummy9 = new Episode('dummy9');
-        dummy5.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy9', dummy9.id) });
-
-        let dummy10 = new Episode('dummy10');
-        dummy4.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy10', dummy10.id) });
-
-        let dummy11 = new Episode('dummy11');
-        dummy4.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy11', dummy11.id) });
-
-        let dummy12 = new Episode('dummy12');
-        dummy4.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy12', dummy12.id) });
-
-        let dummy13 = new Episode('dummy13');
-        dummy4.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy13', dummy13.id) });
-
-        let dummy14 = new Episode('dummy14');
-        dummy10.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy14', dummy14.id) });
-
-        let dummy15 = new Episode('dummy15');
-        dummy10.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy15', dummy15.id) });
-
-        let dummy16 = new Episode('dummy16');
-        dummy10.reactionReasolvers.push({ reaction: new ReactionClosedText('dummy16', dummy16.id) });
-
-        dummy16.reactionReasolvers.push({ reaction: new ReactionClosedText('root', this.root.id) });
-
-
-        let episodes = [this.root, dummy, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, dummy9, dummy10, dummy11, dummy12, dummy13, dummy14, dummy15, dummy16];
-
-        this.map = {};
-
+    defaultLayout = () => {
         let references: { [key: string]: any } = {};
 
         // default layout
@@ -210,8 +171,7 @@ class TimeLine {
             for (let reaction of node.element.reactionReasolvers) {
                 if (reaction.reaction.nextEpisode) {
 
-                    let target = episodes.filter(e => e.id === reaction.reaction.nextEpisode)[0];
-                    console.warn(reaction.reaction.nextEpisode, references[reaction.reaction.nextEpisode]);
+                    let target = this.map[reaction.reaction.nextEpisode].episode;
                     if (target) {
                         nextLayer.push({ element: target, layer: node.layer + 1, x: nextLayerX++ });
                     }
@@ -224,6 +184,7 @@ class TimeLine {
 
         }
 
+        return this;
     }
 
 }
@@ -263,15 +224,66 @@ class EpisodeComponent extends React.Component<{ episode: Episode }>{
 const Grid = Glamorous(ReactGridLayout)({
 });
 
+class GridState {
+    rows: number;
+    columns: number;
+}
+
+const FastGrid = Glamorous.div<{}>((props) => ({
+    display: 'grid',
+    justifyContent: 'start',
+    alignContent: 'start',
+    
+}));
+
+const FastGridItem = Glamorous.div<{x:number, y: number, w: number, h: number}>((props) => ({
+    gridColumn: props.x,
+    gridRow: props.y,
+}));
+class FastGridComponent extends React.Component<{ timeline: TimeLine, columns: number }, GridState>{
+    constructor(props: any) {
+        super(props);
+        let maxX, maxY = 0;
+        let e;
+        for (let eKey of Object.keys(this.props.timeline.map)) {
+            e = this.props.timeline[eKey];
+            maxX = Math.max(maxX, e.x);
+            maxY = Math.max(maxY, e.x);
+        }
+
+        this.state = {
+            rows: maxX + 100,
+            columns: maxY + 100
+        }
+    }
+
+    render() {
+        let items = [];
+        for (let ekey of Object.keys(this.props.timeline)) {
+            items.push();
+        }
+
+
+        return (
+            <FastGrid >
+                {items}
+            </FastGrid>
+        );
+    }
+}
+
 export class Builder extends React.Component<{}, BuilderState>{
     episodesComponents: { [id: string]: EpisodeComponent } = {};
     lines = [];
     layoutChangeTimeout: any;
     gridNode?: Element;
+    layout;
+    episodeDivs;
+
     constructor(props: any) {
         super(props);
         this.state = {
-            timeLine: new TimeLine(),
+            timeLine: new TimeLine().dummy().defaultLayout(),
             timelineHeight: 0,
             episodesComponents: this.episodesComponents,
             lines: this.lines,
@@ -279,6 +291,8 @@ export class Builder extends React.Component<{}, BuilderState>{
             windowHeight: 0,
             windowWidth: 0
         }
+
+        this.onLayoutChange();
     }
 
     handleResize = () => {
@@ -331,7 +345,7 @@ export class Builder extends React.Component<{}, BuilderState>{
                             let xm2 = xt;
                             let ym2 = ym1;
 
-                            lines.push(<polyline points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xt} ${yt}`} fill="none" style={{ stroke: 'blue', strokeWidth: rectFrom.width / 10, opacity: 0.5 }} />);
+                            lines.push(<polyline key={'connect_' + episodeComponent.props.episode.id + '_' + target.props.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xt} ${yt}`} fill="none" style={{ stroke: 'blue', strokeWidth: 10, opacity: 0.5 }} />);
 
                         } else {
                             let xf = rectFrom.right - rectFrom.width / 2;
@@ -342,29 +356,20 @@ export class Builder extends React.Component<{}, BuilderState>{
 
 
                             let xm1 = xf;
-                            let ym1 = yf + rectFrom.height / 10;
+                            let ym1 = yf + 10;
 
                             let xm2 = xm1 + rectFrom.width / 1.5 * (rectFrom.left < rectTo.left ? 1 : -1);
                             let ym2 = ym1;
 
                             let xm3 = xm2;
-                            let ym3 = yt - rectTo.height / 10;
+                            let ym3 = yt - 10;
 
                             let xm4 = xt;
                             let ym4 = ym3;
 
 
-
-                            lines.push(<polyline points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xm3} ${ym3} ${xm4} ${ym4} ${xt} ${yt}`} fill="none" style={{ stroke: 'green', strokeWidth: rectFrom.width / 10, opacity: 0.5 }} />);
-
+                            lines.push(<polyline key={'connect_' + episodeComponent.props.episode.id + '_' + target.props.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2} ${xm3} ${ym3} ${xm4} ${ym4} ${xt} ${yt}`} fill="none" style={{ stroke: 'green', strokeWidth: 10, opacity: 0.5 }} />);
                         }
-
-
-
-
-
-
-
 
                     }
                 }
@@ -374,20 +379,43 @@ export class Builder extends React.Component<{}, BuilderState>{
         return lines;
     }
 
-    onLayoutChange = (layout: ReactGridLayout.Layout[]) => {
+    onLayoutChange = (layout?: ReactGridLayout.Layout[]) => {
+        this.layout = [];
+        this.episodeDivs = [];
+
+        if (this.layout.length === 0) {
+            for (let eKey of Object.keys(this.state.timeLine.map)) {
+                let episodeMaped = this.state.timeLine.map[eKey];
+                let { x, y, w, h } = episodeMaped;
+                this.layout.push({ i: episodeMaped.episode.id, x: x, y: y, w: w, h: h });
+                this.episodeDivs.push(
+                    <div key={episodeMaped.episode.id}>
+                        <EpisodeComponent episode={episodeMaped.episode} ref={this.onEpisosdeCreated} />
+                    </div>
+                )
+            }
+        }
+        if (layout) {
+            this.onUpdateLineNeeded(layout);
+        }
+    }
+
+    onUpdateLineNeeded = (layout: ReactGridLayout.Layout[]) => {
         this.layoutChangeTimeout = setTimeout(() => {
-            this.onLayoutChangeDelayed(layout);
+            this.onUpdateLineNeededDelayed(layout);
         })
 
         this.layoutChangeTimeout = setTimeout(() => {
-            this.onLayoutChangeDelayed(layout);
+            this.onUpdateLineNeededDelayed(layout);
         }, 200)
     }
 
-    onLayoutChangeDelayed = (layout: ReactGridLayout.Layout[]) => {
+    onUpdateLineNeededDelayed = (layout: ReactGridLayout.Layout[]) => {
         this.lines = this.renderLines();
-        this.setState({ layout: layout });
-        this.updateLinesLayout();
+        this.setState({ lines: this.lines });
+        if (this.state.timelineHeight !== (this.gridNode ? this.gridNode.getBoundingClientRect().height : undefined)) {
+            this.setState({ timelineHeight: this.gridNode ? this.gridNode.getBoundingClientRect().height : undefined });
+        }
     }
 
     onGridCreated = (e: ReactGridLayout) => {
@@ -397,32 +425,11 @@ export class Builder extends React.Component<{}, BuilderState>{
         this.gridNode = ReactDOM.findDOMNode(e)
     }
 
-    updateLinesLayout = () => {
-        if (this.gridNode) {
-            this.setState({ timelineHeight: this.gridNode.getBoundingClientRect().height });
-        }
-    }
-
     render() {
-        var layout = [];
-        var episodeComponents = [];
-
-        if (layout.length === 0) {
-            for (let eKey of Object.keys(this.state.timeLine.map)) {
-                let episodeMaped = this.state.timeLine.map[eKey];
-                let { x, y, w, h } = episodeMaped;
-                layout.push({ i: episodeMaped.episode.id, x: x, y: y, w: w, h: h });
-                episodeComponents.push(
-                    <div key={episodeMaped.episode.id}>
-                        <EpisodeComponent episode={episodeMaped.episode} ref={this.onEpisosdeCreated} />
-                    </div>
-                )
-            }
-        }
-
+        console.warn('render!')
         return (
             <Vertical height='100vh' >
-                <div style={{ overflowY: 'scroll', height: '60%', position: 'relative' }}>
+                <div style={{ overflowY: 'scroll', height: '100%', position: 'relative' }}>
                     <svg style={{
                         position: 'absolute',
                         top: 0,
@@ -437,18 +444,19 @@ export class Builder extends React.Component<{}, BuilderState>{
                     <Grid
                         ref={this.onGridCreated}
                         className="layout"
-                        layout={layout}
+                        layout={this.layout}
                         cols={20}
                         rowHeight={30}
                         width={this.state.windowWidth}
                         compactType={null}
                         preventCollision={true}
-                        onResize={this.onLayoutChange}
+                        onResize={this.onUpdateLineNeeded}
                         onLayoutChange={this.onLayoutChange}
-                        onResizeStop={this.onLayoutChange}
-                        onDrag={this.onLayoutChange}
-                        onDragStop={this.onLayoutChange}>
-                        {episodeComponents}
+                        onResizeStop={this.onUpdateLineNeeded}
+                        useCSSTransforms={true}
+                        onDrag={this.onUpdateLineNeeded}
+                        onDragStop={this.onUpdateLineNeeded}>
+                        {this.episodeDivs}
 
                     </Grid>
                 </div>
