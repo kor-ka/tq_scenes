@@ -204,9 +204,13 @@ class EpisodeComponent extends React.Component<{ episode: Episode }>{
         this.element = e;
     }
 
+    onDragStart = (e) => {
+        e.dataTransfer.setData('id', this.props.episode.id);
+    }
+
     render() {
         return (
-            <EpisodeDiv draggable={true} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
+            <EpisodeDiv draggable={true} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
                 {this.props.episode.name}
             </EpisodeDiv>
         );
@@ -225,6 +229,7 @@ const Grid = Glamorous.div<{ w: number, h: number }>((props) => ({
     marginTop: 1,
     gridAutoRows: episodeHeight,
     gridAutoColumns: episodeWidth,
+    // opacity: 0.5,
 }));
 
 const episodeWidth = 100;
@@ -242,8 +247,16 @@ class ChapterState {
     columns: number;
 }
 
-
-class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterState>{
+const colors = ['#F55D3E', '#878E88', '#F7CB15', '#FFFFFF', '#76BED0',];
+const colors2 = ['#540D6E', '#EE4266', '#F7CB15', '#134074', '#1F271B',];
+const hashCode = (s) => {
+    var h = 0, l = s.length, i = 0;
+    if (l > 0)
+        while (i < l)
+            h = (h << 5) - h + s.charCodeAt(i++) | 0;
+    return h;
+};
+class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (chapterId: string, episodeId: string, x: number, y: number) => void }, ChapterState>{
     maxX = 0;
     maxY = 0;
     constructor(props: any) {
@@ -288,13 +301,14 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
                     let xt = from.x === to.x ? (rectTo.left + (rectTo.right - rectTo.left) / 2) : from.x > to.x ? rectTo.right : rectTo.left;
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
 
-                    let xm1 = xf + Math.abs(xf - xt) / 2;
+                    let xm1 = xf - (xf - xt) / 2;
                     let ym1 = yf;
 
-                    let xm2 = xf + Math.abs(xf - xt) / 2;;
+                    let xm2 = xf - (xf - xt) / 2;;
                     let ym2 = yt;
-
-                    lines.push(<polyline key={'connect_' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: 'blue', strokeWidth: 10, opacity: 0.5 }} />);
+                    console.warn(hashCode(from.episode.id + to.episode.id) % colors.length);
+                    // lines.push(<polyline key={'connect_1' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, strokeDasharray: '5,5', opacity: 1 }} />);
+                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors2[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, opacity: 0.5 }} />);
                 }
             }
         }
@@ -308,6 +322,8 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
         this.dragPlaceholder = e;
     }
 
+    targetDropX = 0;
+    targetDropY = 0;
     onDragOver = (e) => {
         e.preventDefault();
 
@@ -320,9 +336,16 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
             x = x - (x % (episodeWidth + gridGap)) + gridGap / 2;
             y = y - (y % (episodeHeight + gridGap)) + gridGap / 2;
 
+            this.targetDropX = Math.round((x - gridGap / 2) / (episodeWidth + gridGap));
+            this.targetDropY = Math.round((y - gridGap / 2) / (episodeHeight + gridGap));
+
             this.dragPlaceholder.style.left = String(x);
             this.dragPlaceholder.style.top = String(y);
         }
+    }
+
+    onDrop = (e) => {
+        this.props.onChange(this.props.chapter.id, e.dataTransfer.getData('id'), this.targetDropX, this.targetDropY);
     }
 
     render() {
@@ -337,18 +360,30 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
 
         return (
 
-            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} className={(this.props as any).className}>
+            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} onDrop={this.onDrop} className={(this.props as any).className}>
+
+                <div ref={this.onDragPlaceholderCreated} style={{
+                    top: 0,
+                    left: 0,
+                    position: 'absolute',
+                    borderRadius: 5,
+                    background: 'gray',
+                    width: 100,
+                    height: 100,
+                    zIndex: -1
+                }} />
+
                 <svg style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    zIndex: -1,
+                    zIndex: -2,
                     width: w,
                     height: h,
-                    backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
-                    backgroundSize: '16px 16px'
+                    // backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
+                    // backgroundSize: '16px 16px'
                 }}>
 
 
@@ -357,17 +392,6 @@ class ChapterComponent extends React.Component<{ chapter: Chapter }, ChapterStat
                 <Grid w={w} h={h}>
                     {items}
                 </Grid>
-
-                <div ref={this.onDragPlaceholderCreated} style={{
-                    top: 0,
-                    left: 0,
-                    position: 'absolute',
-                    border: '2px solid black',
-                    borderRadius: 5,
-                    width: 100,
-                    height: 100,
-                    zIndex: 2
-                }} />
             </div>
 
         );
@@ -399,11 +423,25 @@ export class Builder extends React.Component<{}, BuilderState>{
         }
     }
 
+    onChapterLayoutRequestsChange = (chapterId: string, epsodeId: string, x: number, y: number) => {
+        let targetChapter = this.state.timeLine.filter(c => c.id === chapterId)[0];
+        if (targetChapter) {
+            let targetEpisode = targetChapter.map[epsodeId];
+            if (targetEpisode) {
+                targetEpisode.x = x;
+                targetEpisode.y = y;
+                this.setState({
+                    timeLine: this.state.timeLine
+                })
+            }
+        }
+    }
+
     render() {
         console.warn('render!')
         return (
             <Vertical height='100vh' >
-                <ChapterStyled chapter={this.state.timeLine[this.state.selectedChapter]} />
+                <ChapterStyled chapter={this.state.timeLine[this.state.selectedChapter]} onChange={this.onChapterLayoutRequestsChange} />
             </ Vertical>
         )
     }
