@@ -317,14 +317,36 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
                     let xt = from.x === to.x ? (rectTo.left + (rectTo.right - rectTo.left) / 2) : from.x > to.x ? rectTo.right : rectTo.left;
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
 
+                    
+                    let color = colors2[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length];
+            
+                    lines.push(<marker  key={'arrow_' + from.episode.id + '_' + to.episode.id}  id={'arrow_' + from.episode.id + '_' + to.episode.id}  markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
+                        <path d="M0,0 L0,1 L1.5,0.5 z" fill={color} />
+                    </marker>);
+                    //marker corrections
+                    if(yt === rectTo.top){
+                        yt -= 15;
+                    }
+                    if(yt === rectTo.bottom){
+                        yt += 15;
+                    }
+
+                    if(xt === rectTo.left){
+                        xt -= 15;
+                    }
+                    if(xt === rectTo.right){
+                        xt += 15;
+                    }
+
                     let xm1 = xf - (xf - xt) / 2;
                     let ym1 = yf;
 
                     let xm2 = xf - (xf - xt) / 2;;
                     let ym2 = yt;
-                    console.warn(hashCode(from.episode.id + to.episode.id) % colors.length);
+            
+                    // console.warn(hashCode(from.episode.id + to.episode.id) % colors.length);
                     // lines.push(<polyline key={'connect_1' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, strokeDasharray: '5,5', opacity: 1 }} />);
-                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors2[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, opacity: 0.5 }} />);
+                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: color, strokeWidth: 10, opacity: 0.5 }} markerEnd={`url(#${'arrow_' + from.episode.id + '_' + to.episode.id})`}/>);
                 }
             }
         }
@@ -415,7 +437,6 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
                     // backgroundImage: 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)',
                     // backgroundSize: '16px 16px'
                 }}>
-
 
                     {this.renderLines()}
                 </svg>
