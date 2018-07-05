@@ -259,18 +259,34 @@ const hashCode = (s) => {
 class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (chapterId: string, episodeId: string, x: number, y: number) => void }, ChapterState>{
     maxX = 0;
     maxY = 0;
+    episodesCordinates: { [coordinates: string]: string } = {};
     constructor(props: any) {
         super(props);
-        let e;
-        for (let eKey of Object.keys(this.props.chapter.map)) {
-            e = this.props.chapter.map[eKey];
-            this.maxX = Math.max(this.maxX, e.x);
-            this.maxY = Math.max(this.maxY, e.y);
-        }
+
+        this.updateMeta();
 
         this.state = {
             rows: this.maxX + 100,
             columns: this.maxY + 100
+        }
+    }
+
+    componentWillReceiveProps() {
+        this.updateMeta();
+        this.setState({
+            rows: this.maxX + 100,
+            columns: this.maxY + 100
+        });
+    }
+
+    updateMeta = () => {
+        let e;
+        this.episodesCordinates = {};
+        for (let eKey of Object.keys(this.props.chapter.map)) {
+            e = this.props.chapter.map[eKey];
+            this.maxX = Math.max(this.maxX, e.x);
+            this.maxY = Math.max(this.maxY, e.y);
+            this.episodesCordinates[e.x + '_' + e.y] = e.episode.id;
         }
     }
 
@@ -296,7 +312,7 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
                     };
 
                     let xf = to.x === from.x ? (rectFrom.left + (rectFrom.right - rectFrom.left) / 2) : to.x > from.x ? rectFrom.right : rectFrom.left;
-                    let yf = (xf === rectFrom.right || xf === rectFrom.left || to.y === from.y) ? (rectFrom.top + (rectFrom.bottom - rectFrom.top) / 2) : to.y > from.y ? rectFrom.bottom : rectFrom.top;
+                    let yf = (xf === rectFrom.right || xf === rectFrom.left || to.y === from.y) ? (rectFrom.top + (rectFrom.bottom - rectFrom.top) / 2) + (to.y === from.y ? 0 : to.y > from.y ? 10 : -10) : to.y > from.y ? rectFrom.bottom : rectFrom.top;
 
                     let xt = from.x === to.x ? (rectTo.left + (rectTo.right - rectTo.left) / 2) : from.x > to.x ? rectTo.right : rectTo.left;
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
@@ -341,10 +357,23 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
 
             this.dragPlaceholder.style.left = String(x);
             this.dragPlaceholder.style.top = String(y);
+            this.dragPlaceholder.style.opacity = '1';
+        }
+    }
+
+    onDragLeave = (e) => {
+        if (this.dragPlaceholder) {
+            this.dragPlaceholder.style.opacity = '0';
         }
     }
 
     onDrop = (e) => {
+        if (this.dragPlaceholder) {
+            this.dragPlaceholder.style.opacity = '0';
+        }
+        if (this.episodesCordinates[this.targetDropX + '_' + this.targetDropY]) {
+            return;
+        }
         this.props.onChange(this.props.chapter.id, e.dataTransfer.getData('id'), this.targetDropX, this.targetDropY);
     }
 
@@ -360,14 +389,15 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
 
         return (
 
-            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} onDrop={this.onDrop} className={(this.props as any).className}>
+            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} onDrop={this.onDrop} onDragLeave={this.onDragLeave} className={(this.props as any).className}>
 
                 <div ref={this.onDragPlaceholderCreated} style={{
+                    opacity: 0,
                     top: 0,
                     left: 0,
                     position: 'absolute',
+                    border: '1px dotted gray',
                     borderRadius: 5,
-                    background: 'gray',
                     width: 100,
                     height: 100,
                     zIndex: -1
