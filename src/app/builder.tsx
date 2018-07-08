@@ -260,14 +260,18 @@ const hashCode = (s) => {
             h = (h << 5) - h + s.charCodeAt(i++) | 0;
     return h;
 };
-class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (chapterId: string, episodeId: string, x: number, y: number) => void }, ChapterState>{
+interface ChapterComponentProps {
+    chapter: Chapter;
+    onChange: (chapterId: string, episodeId: string, x: number, y: number) => void;
+}
+class ChapterComponent extends React.Component<ChapterComponentProps, ChapterState>{
     maxX = 0;
     maxY = 0;
     episodesCordinates: { [coordinates: string]: string } = {};
     constructor(props: any) {
         super(props);
 
-        this.updateMeta();
+        this.updateMeta(props);
 
         this.state = {
             rows: this.maxX + 100,
@@ -275,19 +279,19 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
         }
     }
 
-    componentWillReceiveProps() {
-        this.updateMeta();
+    componentWillReceiveProps(next: ChapterComponentProps) {
+        this.updateMeta(next);
         this.setState({
             rows: this.maxX + 100,
             columns: this.maxY + 100
         });
     }
 
-    updateMeta = () => {
+    updateMeta = (props: ChapterComponentProps) => {
         let e;
         this.episodesCordinates = {};
-        for (let eKey of Object.keys(this.props.chapter.map)) {
-            e = this.props.chapter.map[eKey];
+        for (let eKey of Object.keys(props.chapter.map)) {
+            e = props.chapter.map[eKey];
             this.maxX = Math.max(this.maxX, e.x);
             this.maxY = Math.max(this.maxY, e.y);
             this.episodesCordinates[e.x + '_' + e.y] = e.episode.id;
