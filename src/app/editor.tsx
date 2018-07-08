@@ -66,7 +66,7 @@ const Input = Glamorous.input({
   backgroundColor: 'transparent'
 });
 
-export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
+export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number, divider?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'row',
@@ -74,8 +74,8 @@ export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, 
   zIndex: props.zIndex,
   flexShrink: 0,
   '> *': {
-    marginLeft: 8,
-    marginRight: 8
+    marginLeft: props.divider !== undefined ? props.divider : 8,
+    marginRight: props.divider !== undefined ? props.divider : 8
   },
   '>:first-child': {
     marginLeft: 0,
@@ -91,7 +91,7 @@ const Field = Glamorous(Horizontal)({
   justifyContent: 'space-between',
 });
 
-export const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number }>(props => ({
+export const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number, divider?: number }>(props => ({
   width: props.width,
   display: 'flex',
   flexDirection: 'column',
@@ -99,8 +99,8 @@ export const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zI
   zIndex: props.zIndex,
   flexShrink: 0,
   '> *': {
-    marginTop: 8,
-    marginBottom: 8
+    marginTop: props.divider !== undefined ? props.divider : 8,
+    marginBottom: props.divider !== undefined ? props.divider : 8
   },
   '>:first-child': {
     marginTop: 0,

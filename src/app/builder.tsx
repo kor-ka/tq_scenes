@@ -119,11 +119,12 @@ class Episode {
     contentReasolvers?: { condition: Condition, content: Content }[];
     reactionReasolvers: { condition?: Condition, reaction: Reaction, actions?: Action[] }[];
     sceneId?: string;
-    constructor(name: string, defaultNextEpisode?: string) {
-        this.name = name;
+    constructor() {
         this.id = 'episode_' + getId();
-        this.defaultContent = new TextContent('Hi there')
-        this.reactionReasolvers = [{ reaction: new ReactionClosedText('dummy', defaultNextEpisode) }];
+        this.name = 'Episode'
+        this.defaultContent = new TextContent('Some text')
+        this.reactionReasolvers = [];
+        this.contentReasolvers = [];
     }
 }
 
@@ -133,11 +134,13 @@ class Chapter {
     map: { [episodeId: string]: { x: number, y: number, episode: Episode } } = {};
     root: Episode;
     dummy = () => {
-        this.root = new Episode('root');
+        this.root = new Episode();
+        this.root.name = 'root'
 
         let parent = this.root;
         for (let i = 0; i < 20; i++) {
-            let episode = new Episode('dummy_' + i);
+            let episode = new Episode();
+            episode.name = 'dummy_' + i;
             parent.reactionReasolvers.push({ reaction: new ReactionClosedText('to_' + episode.name, episode.id) })
             if (i % 3 === 0) {
                 parent = episode
@@ -151,6 +154,7 @@ class Chapter {
 
     constructor() {
         this.id = 'chapter_' + getId();
+        this.name = 'Chapter'
     }
 
     layout = () => {
@@ -317,24 +321,24 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
                     let xt = from.x === to.x ? (rectTo.left + (rectTo.right - rectTo.left) / 2) : from.x > to.x ? rectTo.right : rectTo.left;
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
 
-                    
+
                     let color = colors2[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length];
-            
-                    lines.push(<marker  key={'arrow_' + from.episode.id + '_' + to.episode.id}  id={'arrow_' + from.episode.id + '_' + to.episode.id}  markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
+
+                    lines.push(<marker key={'arrow_' + from.episode.id + '_' + to.episode.id} id={'arrow_' + from.episode.id + '_' + to.episode.id} markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
                         <path d="M0,0 L0,1 L1.5,0.5 z" fill={color} />
                     </marker>);
                     //marker corrections
-                    if(yt === rectTo.top){
+                    if (yt === rectTo.top) {
                         yt -= 15;
                     }
-                    if(yt === rectTo.bottom){
+                    if (yt === rectTo.bottom) {
                         yt += 15;
                     }
 
-                    if(xt === rectTo.left){
+                    if (xt === rectTo.left) {
                         xt -= 15;
                     }
-                    if(xt === rectTo.right){
+                    if (xt === rectTo.right) {
                         xt += 15;
                     }
 
@@ -343,10 +347,10 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
 
                     let xm2 = xf - (xf - xt) / 2;;
                     let ym2 = yt;
-            
+
                     // console.warn(hashCode(from.episode.id + to.episode.id) % colors.length);
                     // lines.push(<polyline key={'connect_1' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, strokeDasharray: '5,5', opacity: 1 }} />);
-                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: color, strokeWidth: 10, opacity: 0.5 }} markerEnd={`url(#${'arrow_' + from.episode.id + '_' + to.episode.id})`}/>);
+                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: color, strokeWidth: 10, opacity: 0.5 }} markerEnd={`url(#${'arrow_' + from.episode.id + '_' + to.episode.id})`} />);
                 }
             }
         }
@@ -369,7 +373,8 @@ class ChapterComponent extends React.Component<{ chapter: Chapter, onChange: (ch
             let offsetx = e.target.parentElement.scrollLeft;
             let offsety = e.target.parentElement.scrollTop;
             let x = e.clientX + offsetx;
-            let y = e.clientY + offsety;
+            // ugly fix - find top offset
+            let y = e.pageY + offsety - 51;
 
             x = x - (x % (episodeWidth + gridGap)) + gridGap / 2;
             y = y - (y % (episodeHeight + gridGap)) + gridGap / 2;
@@ -453,9 +458,91 @@ const ChapterStyled = Glamorous(ChapterComponent)({
     height: '80%'
 });
 
+const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
+    padding: 16,
+    display: 'flex',
+    flexShrink: 0,
+    backgroundColor: props.selected ? '#efefef' : undefined,
+    alignItems: 'left',
+    ':hover': {
+        background: '#f3f3f3'
+    },
+    borderLeft: props.dragOver ? 'dashed 1px black' : '',
+}));
+
+class ChapterListItem extends React.Component<{ item: Chapter, index: number, selected?: boolean, onClick: (id: string) => void, move: (from: number, to: number) => void }, { dragOver: boolean, dragging: boolean }> {
+    static anyDragged = false;
+    constructor(props: any) {
+        super(props);
+        this.state = { dragOver: false, dragging: false };
+    }
+
+    onDragStart = (e) => {
+        ChapterListItem.anyDragged = true;
+        e.dataTransfer.setData('from', this.props.index);
+        let tagget = e.target;
+        setTimeout(function () {
+            tagget.style.visibility = 'hidden';
+        }, 1);
+        this.setState({
+            dragging: true
+        });
+    }
+
+    onDragEnd = (e) => {
+        let tagget = e.target;
+        setTimeout(function () {
+            tagget.style.visibility = '';
+        }, 1);
+        this.setState({
+            dragging: false
+        });
+    }
+
+    onDragOver = (e) => {
+        e.preventDefault();
+        if (!this.state.dragging) {
+            this.setState({ dragOver: true });
+        }
+    }
+
+    onDragLeave = (e) => {
+        this.setState({ dragOver: false })
+    }
+
+    onDrop = (e) => {
+        e.preventDefault();
+        var index = e.dataTransfer.getData('from');
+        console.warn(index, this.props.index)
+        this.props.move(index, this.props.index)
+        this.setState({ dragOver: false })
+    }
+
+    render() {
+        return (
+            <Vertical onDragStart={this.onDragStart} onDragEnd={this.onDragEnd} onDragLeave={this.onDragLeave} onDragOver={this.onDragOver} onDrop={this.onDrop}>
+                <ChapterListItemStyled dragOver={this.state.dragOver && ChapterListItem.anyDragged} draggable={true} onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
+                    <div>{this.props.item.name}</div>
+                </ChapterListItemStyled>
+            </Vertical>
+        );
+    }
+}
+
+const ChapterList = Glamorous.div({
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'start',
+    flexGrow: 1,
+    flexShrink: 0,
+    overflowX: 'scroll',
+    maxWidth: '100%',
+    background: '#f7f7f7',
+});
+
 interface BuilderState {
     timeLine: Chapter[],
-    selectedChapter: 0,
+    selectedChapter: string,
 }
 
 export class Builder extends React.Component<{}, BuilderState>{
@@ -468,9 +555,11 @@ export class Builder extends React.Component<{}, BuilderState>{
 
     constructor(props: any) {
         super(props);
+        let c = new Chapter().dummy().layout();
+        let c2 = new Chapter().dummy().layout();
         this.state = {
-            timeLine: [new Chapter().dummy().layout()],
-            selectedChapter: 0,
+            timeLine: [c, c2],
+            selectedChapter: c.id,
         }
     }
 
@@ -488,11 +577,23 @@ export class Builder extends React.Component<{}, BuilderState>{
         }
     }
 
+    moveChapter = (from, to) => {
+        let res = [...this.state.timeLine]
+        res.splice(to, 0, res.splice(from, 1)[0]);
+        this.setState({
+            timeLine: res
+        });
+    }
+
     render() {
         console.warn('render!')
         return (
-            <Vertical height='100vh' >
-                <ChapterStyled chapter={this.state.timeLine[this.state.selectedChapter]} onChange={this.onChapterLayoutRequestsChange} />
+
+            <Vertical height='100vh' divider={0}>
+                <ChapterList>
+                    {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
+                </ChapterList>
+                <ChapterStyled chapter={this.state.timeLine.filter(c => c.id === this.state.selectedChapter)[0]} onChange={this.onChapterLayoutRequestsChange} />
             </ Vertical>
         )
     }
