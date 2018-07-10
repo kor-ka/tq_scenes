@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Glamorous from 'glamorous';
-import { Vertical } from './editor';
+import { Vertical, Input, Horizontal } from './editor';
 
 interface StoryState {
     story: Content[];
@@ -195,14 +195,14 @@ class Chapter {
 }
 
 const episodeBorder = 1;
-const EpisodeDiv = Glamorous(Vertical)({
-    border: `${episodeBorder}px solid black`,
+const EpisodeDiv = Glamorous(Vertical)<{ selected: boolean }>((props) => ({
+    border: `${episodeBorder}px solid ${props.selected ? 'black' : 'gray'}`,
     borderRadius: 5,
     backgroundColor: 'white',
     width: '100%',
     height: '100%'
-});
-class EpisodeComponent extends React.Component<{ episode: Episode }>{
+}));
+class EpisodeComponent extends React.Component<{ episode: Episode, selected: boolean }>{
     element?: HTMLElement;
     onEpisodeCreated = (e: HTMLElement) => {
         this.element = e;
@@ -214,7 +214,7 @@ class EpisodeComponent extends React.Component<{ episode: Episode }>{
 
     render() {
         return (
-            <EpisodeDiv draggable={true} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
+            <EpisodeDiv draggable={true} selected={this.props.selected} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
                 {this.props.episode.name}
             </EpisodeDiv>
         );
@@ -262,6 +262,7 @@ const hashCode = (s) => {
 };
 interface ChapterComponentProps {
     chapter: Chapter;
+    selectedEpisode: string;
     onChange: (chapterId: string, episodeId: string, x: number, y: number) => void;
 }
 class ChapterComponent extends React.Component<ChapterComponentProps, ChapterState>{
@@ -378,7 +379,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
             let offsety = e.target.parentElement.scrollTop;
             let x = e.clientX + offsetx;
             // ugly fix - find top offset
-            let y = e.pageY + offsety - 51;
+            let y = e.pageY + offsety - 50;
 
             x = x - (x % (episodeWidth + gridGap)) + gridGap / 2;
             y = y - (y % (episodeHeight + gridGap)) + gridGap / 2;
@@ -412,7 +413,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
         let items = [];
         for (let ekey of Object.keys(this.props.chapter.map)) {
             let e = this.props.chapter.map[ekey];
-            items.push(<ChapterItem key={e.episode.id} episode={e.episode} x={e.x + 1} y={e.y + 1} />);
+            items.push(<ChapterItem key={e.episode.id} episode={e.episode} x={e.x + 1} y={e.y + 1} selected={this.props.selectedEpisode === e.episode.id} />);
         }
 
         let w = this.state.columns * episodeWidth + (this.state.columns - 1) * gridGap;
@@ -458,8 +459,8 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
     }
 }
 
-const ChapterStyled = Glamorous(ChapterComponent)({
-    height: '80%'
+const ChapterMap = Glamorous(ChapterComponent)({
+    height: 'calc(60% - 50px)'
 });
 
 const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
@@ -474,11 +475,11 @@ const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boo
     borderLeft: props.dragOver ? 'dashed 1px black' : '',
 }));
 
-class ChapterListItem extends React.Component<{ item: Chapter, index: number, selected?: boolean, onClick: (id: string) => void, move: (from: number, to: number) => void }, { dragOver: boolean, dragging: boolean }> {
+class ChapterListItem extends React.Component<{ item: Chapter, index: number, selected?: boolean, onClick: (id: string) => void, move: (from: number, to: number) => void }, { dragOver: boolean, dragging: boolean, chapterName: string }> {
     static anyDragged = false;
     constructor(props: any) {
         super(props);
-        this.state = { dragOver: false, dragging: false };
+        this.state = { dragOver: false, dragging: false, chapterName: props.item.name };
     }
 
     onDragStart = (e) => {
@@ -517,23 +518,45 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     onDrop = (e) => {
         e.preventDefault();
         var index = e.dataTransfer.getData('from');
-        console.warn(index, this.props.index)
         this.props.move(index, this.props.index)
         this.setState({ dragOver: false })
+    }
+
+    rename = (v: any) => {
+        this.props.item.name = v.target.value;
+        this.setState({ chapterName: this.props.item.name });
     }
 
     render() {
         return (
             <Vertical onDragStart={this.onDragStart} onDragEnd={this.onDragEnd} onDragLeave={this.onDragLeave} onDragOver={this.onDragOver} onDrop={this.onDrop}>
                 <ChapterListItemStyled dragOver={this.state.dragOver && ChapterListItem.anyDragged} draggable={true} onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
-                    <div>{this.props.item.name}</div>
+                    <Input value={this.state.chapterName} onChange={this.rename} />
                 </ChapterListItemStyled>
             </Vertical>
         );
     }
 }
 
+class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void }>{
+    constructor(props: any) {
+        super(props);
+    }
+    rename = (v: any) => {
+        this.props.onChange({ ...this.props.episode, name: v.target.value });
+    }
+
+    render() {
+        return (
+            <Vertical>
+                <Input value={this.props.episode.name} onChange={this.rename} />
+            </Vertical>
+        );
+    }
+}
+
 const ChapterList = Glamorous.div({
+    height: 50,
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'start',
@@ -546,24 +569,26 @@ const ChapterList = Glamorous.div({
 
 interface BuilderState {
     timeLine: Chapter[],
+    episodesMap: { [key: string]: { episode: Episode } }
     selectedChapter: string,
+    selectedepisode: string,
 }
 
-export class Builder extends React.Component<{}, BuilderState>{
-    episodesComponents: { [id: string]: EpisodeComponent } = {};
-    lines = [];
-    layoutChangeTimeout: any;
-    gridNode?: Element;
-    layout;
-    episodeDivs;
+const BottomConstainer = Glamorous(Horizontal)({
+    height: 'calc(40% - 50px)'
+});
 
+export class Builder extends React.Component<{}, BuilderState>{
     constructor(props: any) {
         super(props);
         let c = new Chapter().dummy().layout();
         let c2 = new Chapter().dummy().layout();
+        let map = { ...c.map, ...c2.map };
         this.state = {
             timeLine: [c, c2],
+            episodesMap: map,
             selectedChapter: c.id,
+            selectedepisode: c.root.id,
         }
     }
 
@@ -589,6 +614,19 @@ export class Builder extends React.Component<{}, BuilderState>{
         });
     }
 
+    updateEpisode = (e: Episode) => {
+        let newMap = { ...this.state.episodesMap };
+        newMap[e.id] = { episode: e };
+        let newTimeline = [...this.state.timeLine];
+        for (let c of newTimeline) {
+            let eMapped = c.map[e.id];
+            if (eMapped) {
+                c.map[e.id] = { ...eMapped, episode: e };
+            }
+        }
+        this.setState({ timeLine: newTimeline, episodesMap: newMap });
+    }
+
     render() {
         console.warn('render!')
         return (
@@ -597,7 +635,10 @@ export class Builder extends React.Component<{}, BuilderState>{
                 <ChapterList>
                     {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
                 </ChapterList>
-                <ChapterStyled chapter={this.state.timeLine.filter(c => c.id === this.state.selectedChapter)[0]} onChange={this.onChapterLayoutRequestsChange} />
+                <ChapterMap chapter={this.state.timeLine.filter(c => c.id === this.state.selectedChapter)[0]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} />
+                <BottomConstainer>
+                    <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode].episode} onChange={this.updateEpisode} />
+                </BottomConstainer>
             </ Vertical>
         )
     }

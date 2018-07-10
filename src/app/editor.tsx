@@ -58,7 +58,7 @@ const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => (
 
 }));
 
-const Input = Glamorous.input({
+export const Input = Glamorous.input({
   minHeight: 24,
   outline: 0,
   borderWidth: '0 0 1px',
