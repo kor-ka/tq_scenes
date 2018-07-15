@@ -22,7 +22,7 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
   ...(props.animation || {})
 }));
 
-const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => ({
+export const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => ({
   cursor: 'pointer',
   padding: 8,
   color: props.color || 'blue',

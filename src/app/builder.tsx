@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Glamorous from 'glamorous';
-import { Vertical, Input, Horizontal } from './editor';
+import { Vertical, Input, Horizontal, Button } from './editor';
 
 interface StoryState {
     story: Content[];
@@ -132,12 +132,9 @@ class Chapter {
     id: string;
     name: string;
     map: { [episodeId: string]: { x: number, y: number, episode: Episode } } = {};
-    root: Episode;
     dummy = () => {
-        this.root = new Episode();
-        this.root.name = 'root'
 
-        let parent = this.root;
+        let parent = new Episode();
         for (let i = 0; i < 20; i++) {
             let episode = new Episode();
             episode.name = 'dummy_' + i;
@@ -161,7 +158,7 @@ class Chapter {
         let references: { [key: string]: any } = {};
 
         // default layout
-        let nextLayer = [{ element: this.root, layer: 0, order: 0 }];
+        let nextLayer = [{ element: this.map[Object.keys(this.map)[0]].episode, layer: 0, order: 0 }];
         let lastLayer = 0;
         let nextLayerOrder = 0;
         while (nextLayer.length !== 0) {
@@ -264,6 +261,7 @@ interface ChapterComponentProps {
     chapter: Chapter;
     selectedEpisode: string;
     onChange: (chapterId: string, episodeId: string, x: number, y: number) => void;
+    createEpiside: () => void
 }
 class ChapterComponent extends React.Component<ChapterComponentProps, ChapterState>{
     maxX = 0;
@@ -409,6 +407,10 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
         this.props.onChange(this.props.chapter.id, e.dataTransfer.getData('id'), this.targetDropX, this.targetDropY);
     }
 
+    newEpisode = () => {
+        this.props.createEpiside();
+    }
+
     render() {
         let items = [];
         for (let ekey of Object.keys(this.props.chapter.map)) {
@@ -453,6 +455,13 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                 <Grid w={w} h={h}>
                     {items}
                 </Grid>
+
+                <Button onClick={this.newEpisode} style={
+                    {
+                        position: 'fixed',
+                        top: 'calc(50% + 50px)',
+                        left: 'calc(100% - 100px)',
+                    }}><i className="material-icons">add</i></Button>
             </div>
 
         );
@@ -568,8 +577,10 @@ const ChapterList = Glamorous.div({
 });
 
 interface BuilderState {
-    timeLine: Chapter[],
+    root: Episode,
     episodesMap: { [key: string]: { episode: Episode } }
+    timeLine: Chapter[],
+    chapterMap: { [key: string]: { chapter: Chapter } }
     selectedChapter: string,
     selectedepisode: string,
 }
@@ -581,15 +592,73 @@ const BottomConstainer = Glamorous(Horizontal)({
 export class Builder extends React.Component<{}, BuilderState>{
     constructor(props: any) {
         super(props);
-        let c = new Chapter().dummy().layout();
-        let c2 = new Chapter().dummy().layout();
-        let map = { ...c.map, ...c2.map };
+        let root = new Episode();
+        root.defaultContent = new TextContent('Hi! It\'s begining of story', 'Root episode');
+
+        let rootChapter = new Chapter();
+        rootChapter.name = 'Chapter 1';
+        rootChapter.map[root.id] = { episode: root, x: 0, y: 0 };
+
+        let eMap = { ...rootChapter.map };
+
+        let cMap = {};
+        cMap[rootChapter.id] = { chapter: rootChapter };
+
         this.state = {
-            timeLine: [c, c2],
-            episodesMap: map,
-            selectedChapter: c.id,
-            selectedepisode: c.root.id,
+            root: root,
+            timeLine: [rootChapter],
+            episodesMap: eMap,
+            chapterMap: cMap,
+            selectedChapter: rootChapter.id,
+            selectedepisode: root.id,
         }
+    }
+
+    newEpisode = (targetChapter?: string) => {
+        let e = new Episode();
+        let map = { ...this.state.episodesMap };
+        map[e.id] = { episode: e };
+
+        console.warn(targetChapter || this.state.selectedChapter);
+        console.warn(this.state.chapterMap);
+        let chapter = this.state.chapterMap[targetChapter || this.state.selectedChapter].chapter;
+
+        // find place
+        let x = 0;
+        let fits = false;
+        while (!fits) {
+            fits = true;
+            for (let eKey of Object.keys(chapter.map)) {
+                let e = chapter.map[eKey];
+                if (e.x === x) {
+                    x++;
+                    fits = false;
+                    break;
+                }
+            }
+        }
+
+        chapter.map[e.id] = { episode: e, x: x, y: 0 };
+
+        this.setState({
+            episodesMap: map,
+            selectedepisode: e.id,
+        })
+
+    }
+
+    newChapter = () => {
+        let chapter = new Chapter();
+        let map = { ...this.state.chapterMap };
+        map[chapter.id] = { chapter: chapter };
+        let timeLine = [...this.state.timeLine, chapter]
+        this.setState({
+            chapterMap: map,
+            selectedChapter: chapter.id,
+            timeLine: timeLine,
+        },
+            () => this.newEpisode()
+        );
     }
 
     onChapterLayoutRequestsChange = (chapterId: string, epsodeId: string, x: number, y: number) => {
@@ -628,14 +697,15 @@ export class Builder extends React.Component<{}, BuilderState>{
     }
 
     render() {
-        console.warn('render!')
+        console.warn(this.state);
         return (
 
             <Vertical height='100vh' divider={0}>
                 <ChapterList>
                     {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
+                    <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
                 </ChapterList>
-                <ChapterMap chapter={this.state.timeLine.filter(c => c.id === this.state.selectedChapter)[0]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} />
+                <ChapterMap chapter={this.state.chapterMap[this.state.selectedChapter].chapter} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
                 <BottomConstainer>
                     <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode].episode} onChange={this.updateEpisode} />
                 </BottomConstainer>
