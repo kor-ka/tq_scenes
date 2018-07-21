@@ -12,7 +12,7 @@
     "postbuild": "cp -r public/ docs/"
   },
   "dependencies": {
-    "@types/react": "16.0.40",
+    "@types/react": "16.4.1",
     "@types/react-color": "^2.13.5",
     "@types/react-dom": "16.0.4",
     "@types/react-grid-layout": "^0.16.4",

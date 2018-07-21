@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Glamorous from 'glamorous';
-import { Vertical, Input, Horizontal, Button } from './editor';
+import { Vertical, Input, Horizontal, Button, TextArea, Select } from './editor';
 
 interface StoryState {
     story: Content[];
@@ -30,7 +30,7 @@ class Content {
 
 class TextContent extends Content {
     text: string;
-    constructor(text?: string, name?: string) {
+    constructor(text: string, name?: string) {
         super('text', 'content_text_' + getId(), name);
         this.text = text;
     }
@@ -44,7 +44,7 @@ class ImageContent extends Content {
     }
 }
 
-type ConditionType = 'varEquals';
+type ConditionType = 'equals' | 'greater' | 'less' | 'and' | 'or';
 
 class Condition {
     type: ConditionType;
@@ -53,10 +53,10 @@ class Condition {
     }
 }
 
-class VarEqualsCondition extends Condition {
+class ConditionEquals extends Condition {
     type: ConditionType;
     constructor() {
-        super('varEquals')
+        super('equals')
     }
 }
 
@@ -92,7 +92,7 @@ class DecrimentAction extends Action {
     }
 }
 
-type ReactionType = 'closed_text' | 'open_text';
+type ReactionType = 'closed_text' | 'open_text' | 'pipe';
 class Reaction {
     id: string;
     type: ReactionType;
@@ -112,19 +112,25 @@ class ReactionClosedText extends Reaction {
     }
 }
 
+class ReactionPipe extends Reaction {
+    title: string;
+    constructor(title: string, nextEpisode?: string) {
+        super('pipe', nextEpisode);
+        this.title = title;
+    }
+}
+
 class Episode {
     id: string;
     name: string;
-    defaultContent: Content;
-    contentReasolvers?: { condition: Condition, content: Content }[];
+    contentReasolvers: { condition?: Condition, content: Content }[];
     reactionReasolvers: { condition?: Condition, reaction: Reaction, actions?: Action[] }[];
     sceneId?: string;
     constructor() {
         this.id = 'episode_' + getId();
         this.name = 'Episode'
-        this.defaultContent = new TextContent('Some text')
-        this.reactionReasolvers = [];
-        this.contentReasolvers = [];
+        this.reactionReasolvers = [{ reaction: new ReactionClosedText('Some reaction') }];
+        this.contentReasolvers = [{ content: new TextContent('Some text') }];
     }
 }
 
@@ -199,6 +205,9 @@ const EpisodeDiv = Glamorous(Vertical)<{ selected: boolean }>((props) => ({
     width: '100%',
     height: '100%'
 }));
+
+const MapsProvider = React.createContext<{ eMap: { [id: string]: { episode: Episode } }, cMap: { [id: string]: { chapter: Chapter } } }>({ eMap: {}, cMap: {} });
+
 class EpisodeComponent extends React.Component<{ episode: Episode, selected: boolean, onClick: () => void }>{
     element?: HTMLElement;
     onEpisodeCreated = (e: HTMLElement) => {
@@ -300,6 +309,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 
     renderLines = () => {
         let lines = [];
+
         for (let eKey of Object.keys(this.props.chapter.map)) {
             let from = this.props.chapter.map[eKey];
             for (let reactionResolver of from.episode.reactionReasolvers) {
@@ -460,7 +470,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                 <Button onClick={this.newEpisode} style={
                     {
                         position: 'fixed',
-                        top: 'calc(50% + 50px)',
+                        top: 'calc(50% - 50px)',
                         left: 'calc(100% - 100px)',
                     }}><i className="material-icons">add</i></Button>
             </div>
@@ -470,7 +480,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 }
 
 const ChapterMap = Glamorous(ChapterComponent)({
-    height: 'calc(60% - 50px)'
+    height: 'calc(50% - 50px)'
 });
 
 const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
@@ -548,19 +558,136 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     }
 }
 
-class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void }>{
-    constructor(props: any) {
+const TextContentStyled = Glamorous.div({
+    whiteSpace: 'pre-wrap',
+    border: '1px solid gray',
+    padding: 10,
+    borderRadius: 10
+});
+class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, onClick: (content: C) => void }>{
+    render() {
+        let content: any = <TextContentStyled><strong>Not supported yet</strong></TextContentStyled>;
+        if (this.props.content.type === 'text') {
+            content = <TextContentStyled>{(this.props.content as Partial<TextContent>).text}</TextContentStyled>;
+        } else if (this.props.content.type === 'closed_text') {
+            content = <TextContentStyled>{(this.props.content as Partial<ReactionClosedText>).title}</TextContentStyled>;
+        }
+        return (
+            React.cloneElement(content, { onClick: () => this.props.onClick(this.props.content) })
+        );
+    }
+}
+
+class TextContenSettings extends React.Component<{ content: TextContent, onChange: (content: TextContent) => void }>{
+    render() {
+        return (
+            <TextArea value={this.props.content.text} onChange={(v: any) => this.props.onChange({ ...this.props.content, text: v.target.value })} />
+        );
+    }
+}
+
+
+class ReactionClosedTextettings extends React.Component<{ content: ReactionClosedText, onChange: (content: ReactionClosedText) => void }>{
+    render() {
+        return (
+            <>
+                <Input value={this.props.content.title} onChange={(v: any) => this.props.onChange({ ...this.props.content, title: v.target.value })} />
+                <Select onChange={(v: any) => {
+                    this.props.onChange({ ...this.props.content, nextEpisode: v.target.value ? v.target.value : undefined })
+                }} value={this.props.content.nextEpisode}>
+                    <option key="none" value="">no connection</option>
+                    <MapsProvider.Consumer>
+                        {maps => Object.keys(maps.eMap).map(eKey => <option key={eKey} value={maps.eMap[eKey].episode.id} >{maps.eMap[eKey].episode.name}</option>)}
+                    </MapsProvider.Consumer>
+                </Select>
+            </>
+        );
+    }
+}
+
+class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, onChange: (content: C) => void }>{
+    render() {
+        if (!this.props.content) {
+            return <Vertical flex={1} />;
+        }
+        let content: any = <TextContentStyled><strong>Not supported yet</strong></TextContentStyled>;
+        if (this.props.content.type === 'text') {
+            content = <TextContenSettings content={this.props.content as any} onChange={this.props.onChange as any} />;
+        } else if (this.props.content.type === 'closed_text') {
+            content = <ReactionClosedTextettings content={this.props.content as any} onChange={this.props.onChange as any} />;
+        }
+        return (
+            <Vertical flex={1} scrollable={true} padding="16px">
+                {/* todo: dev tool, delete */}
+                {this.props.content.id}
+                {content}
+                <Button style={{ alignSelf: 'flex-end' }} color="red"><i className="material-icons">delete</i></Button>
+            </Vertical>
+        );
+    }
+}
+
+class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void }, {
+    selectedElement?: string,
+}>{
+    constructor(props: { episode: Episode, onChange: (episode: Episode) => void }) {
         super(props);
+        let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
+        this.state = { selectedElement: element ? (element.content || element.reaction).id : undefined };
+    }
+
+    componentWillReceiveProps(props: { episode: Episode }) {
+        let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
+        if (this.props.episode.id !== props.episode.id) {
+            this.setState({ selectedElement: element ? (element.content || element.reaction).id : undefined });
+        }
     }
     rename = (v: any) => {
         this.props.onChange({ ...this.props.episode, name: v.target.value });
     }
 
+    selectElement = (target: { id: string }) => {
+        this.setState({
+            selectedElement: target.id
+        })
+    }
+
+    onElementChange = (target: Content | Reaction) => {
+        let res = { ...this.props.episode };
+
+        res.contentReasolvers = res.contentReasolvers.map(c => c.content.id === target.id ? { ...c, content: target as Content } : c);
+        res.reactionReasolvers = res.reactionReasolvers.map(c => c.reaction.id === target.id ? { ...c, reaction: target as Reaction } : c);
+        console.warn(target);
+        this.props.onChange(res);
+    }
+
+    addContent = () => {
+        this.props.onChange({ ...this.props.episode, contentReasolvers: [...this.props.episode.contentReasolvers, { content: new TextContent("Some text") }] })
+    }
+
+    addReaction = () => {
+        this.props.onChange({ ...this.props.episode, reactionReasolvers: [...this.props.episode.reactionReasolvers, { reaction: new ReactionClosedText("Some reaction") }] })
+    }
+
     render() {
+        let elementContainer: { content?: Content, reaction?: Reaction } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
-            <Vertical>
-                <Input value={this.props.episode.name} onChange={this.rename} />
-            </Vertical>
+            <Horizontal width="100%">
+                <Vertical flex={1} padding="16px" scrollable={true} alignItems="flex-start">
+                    <Input value={this.props.episode.name} onChange={this.rename} />
+                    {this.props.episode.contentReasolvers.map(c =>
+                        <ContentRender key={c.content.id} content={c.content} onClick={this.selectElement} />
+                    )}
+                    <Button onClick={this.addContent} style={{ alignSelf: 'flex-start' }} color="blue"><i className="material-icons">add</i><i className="material-icons">edit</i></Button>
+
+                    {this.props.episode.reactionReasolvers.map(c =>
+                        <ContentRender key={c.reaction.id} content={c.reaction} onClick={this.selectElement} />
+                    )}
+                    <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="blue"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
+
+                </Vertical>
+                <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
+            </Horizontal>
         );
     }
 }
@@ -588,14 +715,14 @@ interface BuilderState {
 }
 
 const BottomConstainer = Glamorous(Horizontal)({
-    height: 'calc(40% - 50px)'
+    height: 'calc(50% - 50px)',
+    width: '100%'
 });
 
 export class Builder extends React.Component<{}, BuilderState>{
     constructor(props: any) {
         super(props);
         let root = new Episode();
-        root.defaultContent = new TextContent('Hi! It\'s begining of story', 'Root episode');
 
         let rootChapter = new Chapter();
         rootChapter.name = 'Chapter 1';
@@ -621,8 +748,6 @@ export class Builder extends React.Component<{}, BuilderState>{
         let map = { ...this.state.episodesMap };
         map[e.id] = { episode: e };
 
-        console.warn(targetChapter || this.state.selectedChapter);
-        console.warn(this.state.chapterMap);
         let chapter = this.state.chapterMap[targetChapter || this.state.selectedChapter].chapter;
 
         // find place
@@ -686,17 +811,19 @@ export class Builder extends React.Component<{}, BuilderState>{
     }
 
     updateEpisode = (e: Episode) => {
-        // todo: capture incoming connections
+        // todo: capture incoming connection
 
         let newMap = { ...this.state.episodesMap };
+        let newCMap = { ...this.state.chapterMap };
         newMap[e.id] = { episode: e };
         for (let c of this.state.timeLine) {
             let eMapped = c.map[e.id];
             if (eMapped) {
                 c.map[e.id] = { ...eMapped, episode: e };
+                newCMap[c.id].chapter.map[e.id] = c.map[e.id];
             }
         }
-        this.setState({ episodesMap: newMap });
+        this.setState({ episodesMap: newMap, chapterMap: newCMap });
     }
 
     selectEpisode = (id: string) => {
@@ -704,19 +831,20 @@ export class Builder extends React.Component<{}, BuilderState>{
     }
 
     render() {
-        console.warn(this.state);
         return (
+            <MapsProvider.Provider value={{ eMap: this.state.episodesMap, cMap: this.state.chapterMap }}>
+                <Vertical height='100vh' divider={0}>
+                    <ChapterList>
+                        {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
+                        <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
+                    </ChapterList>
+                    <ChapterMap selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter].chapter} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
+                    <BottomConstainer>
+                        <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode].episode} onChange={this.updateEpisode} />
+                    </BottomConstainer>
+                </ Vertical>
+            </MapsProvider.Provider>
 
-            <Vertical height='100vh' divider={0}>
-                <ChapterList>
-                    {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
-                    <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
-                </ChapterList>
-                <ChapterMap selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter].chapter} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
-                <BottomConstainer>
-                    <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode].episode} onChange={this.updateEpisode} />
-                </BottomConstainer>
-            </ Vertical>
         )
     }
 }

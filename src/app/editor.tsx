@@ -58,7 +58,24 @@ export const Button = Glamorous.button<{ color?: string, active?: boolean }>(pro
 
 }));
 
+export const Select = Glamorous.select({
+  border: 'solid 1px blue',
+  borderRadius: 8,
+  height: 40,
+  minHeight: 40,
+  background: 'transparent',
+  outline: 0
+});
+
 export const Input = Glamorous.input({
+  minHeight: 24,
+  outline: 0,
+  borderWidth: '0 0 1px',
+  borderColor: 'blue',
+  backgroundColor: 'transparent'
+});
+
+export const TextArea = Glamorous.textarea({
   minHeight: 24,
   outline: 0,
   borderWidth: '0 0 1px',
@@ -91,13 +108,26 @@ const Field = Glamorous(Horizontal)({
   justifyContent: 'space-between',
 });
 
-export const Vertical = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number, divider?: number }>(props => ({
+export const Vertical = Glamorous.div<{
+  justifyContent?: string,
+  alignItems?: string,
+  width?: any,
+  zIndex?: number,
+  divider?: number,
+  scrollable?: boolean,
+  padding?: string,
+  flex?: number
+}>(props => ({
+  padding: props.padding,
   width: props.width,
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: props.justifyContent || 'start',
+  justifyContent: props.justifyContent,
+  alignItems: props.alignItems,
   zIndex: props.zIndex,
   flexShrink: 0,
+  flex: props.flex,
+  overflowY: props.scrollable ? 'scroll' : undefined,
   '> *': {
     marginTop: props.divider !== undefined ? props.divider : 8,
     marginBottom: props.divider !== undefined ? props.divider : 8
