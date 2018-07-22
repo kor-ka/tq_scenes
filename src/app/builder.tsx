@@ -343,17 +343,17 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     </marker>);
                     //marker corrections
                     if (yt === rectTo.top) {
-                        yt -= 25;
+                        yt -= 15;
                     }
                     if (yt === rectTo.bottom) {
-                        yt += 25;
+                        yt += 15;
                     }
 
                     if (xt === rectTo.left) {
-                        xt -= 25;
+                        xt -= 15;
                     }
                     if (xt === rectTo.right) {
-                        xt += 25;
+                        xt += 15;
                     }
 
                     let xm1 = xf - (xf - xt) / 2;
@@ -458,7 +458,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     zIndex: -2,
                     width: w,
                     height: h,
-                    padding: 10,
+                    // padding: 10,
                 }}>
 
                     {this.renderLines()}
@@ -719,6 +719,7 @@ const BottomConstainer = Glamorous(Horizontal)({
     width: '100%'
 });
 
+// TODO keep ONE map, other - ids
 export class Builder extends React.Component<{}, BuilderState>{
     constructor(props: any) {
         super(props);
@@ -733,17 +734,20 @@ export class Builder extends React.Component<{}, BuilderState>{
         let cMap = {};
         cMap[rootChapter.id] = { chapter: rootChapter };
 
-        //recover editor state
-        let builderState = JSON.parse(window.localStorage.getItem('builderState'));
-
-
-        this.state = {
+        let defaultState = {
             root: root,
             timeLine: [rootChapter],
             episodesMap: eMap,
             chapterMap: cMap,
             selectedChapter: rootChapter.id,
             selectedepisode: root.id,
+        }
+
+        //recover editor state
+        let builderState = JSON.parse(window.localStorage.getItem('builderState')) || defaultState;
+
+        this.state = {
+
             ...builderState
         }
     }
@@ -776,9 +780,13 @@ export class Builder extends React.Component<{}, BuilderState>{
 
         chapter.map[e.id] = { episode: e, x: x, y: 0 };
 
+        let newCMap = { ...this.state.chapterMap };
+        newCMap[chapter.id].chapter.map[e.id] = chapter.map[e.id];
+
         this.setState({
             episodesMap: map,
             selectedepisode: e.id,
+            chapterMap: newCMap,
         })
 
     }
@@ -798,17 +806,19 @@ export class Builder extends React.Component<{}, BuilderState>{
     }
 
     onChapterLayoutRequestsChange = (chapterId: string, epsodeId: string, x: number, y: number) => {
-        let targetChapter = this.state.timeLine.filter(c => c.id === chapterId)[0];
+        let targetChapter = this.state.chapterMap[chapterId].chapter;
         if (targetChapter) {
             let targetEpisode = targetChapter.map[epsodeId];
             if (targetEpisode) {
                 targetEpisode.x = x;
                 targetEpisode.y = y;
-                this.setState({
-                    timeLine: this.state.timeLine
-                })
+
                 let newCMap = { ...this.state.chapterMap };
                 newCMap[targetChapter.id].chapter.map[targetEpisode.episode.id] = targetChapter.map[targetEpisode.episode.id];
+                this.setState({
+                    chapterMap: newCMap
+                })
+
             }
         }
     }
@@ -827,13 +837,16 @@ export class Builder extends React.Component<{}, BuilderState>{
         let newMap = { ...this.state.episodesMap };
         let newCMap = { ...this.state.chapterMap };
         newMap[e.id] = { episode: e };
-        for (let c of this.state.timeLine) {
+
+        let c = this.state.chapterMap[this.state.selectedChapter].chapter
+        if (c) {
             let eMapped = c.map[e.id];
             if (eMapped) {
                 c.map[e.id] = { ...eMapped, episode: e };
                 newCMap[c.id].chapter.map[e.id] = c.map[e.id];
             }
         }
+
         this.setState({ episodesMap: newMap, chapterMap: newCMap });
     }
 
