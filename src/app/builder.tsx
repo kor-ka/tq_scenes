@@ -592,7 +592,7 @@ class ReactionClosedTextettings extends React.Component<{ content: ReactionClose
         return (
             <>
                 <Input value={this.props.content.title} onChange={(v: any) => this.props.onChange({ ...this.props.content, title: v.target.value })} />
-                <Select onChange={(v: any) => {
+                <Select key={this.props.content.id} onChange={(v: any) => {
                     this.props.onChange({ ...this.props.content, nextEpisode: v.target.value ? v.target.value : undefined })
                 }} value={this.props.content.nextEpisode}>
                     <option key="none" value="">no connection</option>
