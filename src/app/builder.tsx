@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Glamorous from 'glamorous';
 import { Vertical, Input, Horizontal, Button, TextArea, Select } from './editor';
-import { getId } from './utils/id';
+import { getUid } from './utils/id';
 
 interface StoryState {
     story: Content[];
@@ -26,7 +26,7 @@ class Content {
 class TextContent extends Content {
     text: string;
     constructor(text: string, name?: string) {
-        super('text', 'content_text_' + getId(), name);
+        super('text', 'content_text_' + getUid(), name);
         this.text = text;
     }
 }
@@ -34,7 +34,7 @@ class TextContent extends Content {
 class ImageContent extends Content {
     src: string;
     constructor(src?: string, name?: string) {
-        super('image', 'content_image_' + getId(), name);
+        super('image', 'content_image_' + getUid(), name);
         this.src = src;
     }
 }
@@ -93,7 +93,7 @@ class Reaction {
     type: ReactionType;
     nextEpisode?: string;
     constructor(type: ReactionType, nextEpisode?: string) {
-        this.id = 'reaction_' + getId();
+        this.id = 'reaction_' + getUid();
         this.type = type;
         this.nextEpisode = nextEpisode;
     }
@@ -122,7 +122,7 @@ class Episode {
     reactionReasolvers: { condition?: Condition, reaction: Reaction, actions?: Action[] }[];
     sceneId?: string;
     constructor() {
-        this.id = 'episode_' + getId();
+        this.id = 'episode_' + getUid();
         this.name = 'Episode'
         this.reactionReasolvers = [{ reaction: new ReactionClosedText('Some reaction') }];
         this.contentReasolvers = [{ content: new TextContent('Some text') }];
@@ -135,7 +135,7 @@ class Chapter {
     map: { [episodeId: string]: { x: number, y: number, episodeId: string } } = {};
 
     constructor() {
-        this.id = 'chapter_' + getId();
+        this.id = 'chapter_' + getUid();
         this.name = 'Chapter';
     }
 }

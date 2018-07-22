@@ -1,5 +1,5 @@
 let lastId = new Date().getTime();
-export const getId = () => {
+export const getUid = () => {
     lastId += 1;
     return lastId;
 }

@@ -3,7 +3,8 @@ import * as ReactDOM from 'react-dom';
 import * as glamor from 'glamor';
 import Glamorous from 'glamorous';
 import { SketchPicker as SketchPickerRaw } from 'react-color';
-import { getId } from './utils/id';
+import { getUid } from './utils/id';
+import { ScenePicker } from './scenePicker';
 
 const SketchPicker = Glamorous(SketchPickerRaw)({
   boxShadow: 'none !important',
@@ -84,15 +85,28 @@ export const TextArea = Glamorous.textarea({
   backgroundColor: 'transparent'
 });
 
-export const Horizontal = Glamorous.div<{ flex?: number, justifyContent?: string, width?: any, height?: any, zIndex?: number, divider?: number }>(props => ({
-  width: props.width,
+export const Horizontal = Glamorous.div<{
+  height?: any,
+  justifyContent?: string,
+  alignItems?: string,
+  width?: any,
+  zIndex?: number,
+  divider?: number,
+  scrollable?: boolean,
+  padding?: string,
+  flex?: number
+}>(props => ({
   height: props.height,
-  flex: props.flex,
+  padding: props.padding,
+  width: props.width,
   display: 'flex',
   flexDirection: 'row',
-  justifyContent: props.justifyContent || 'start',
+  justifyContent: props.justifyContent,
+  alignItems: props.alignItems,
   zIndex: props.zIndex,
   flexShrink: 0,
+  flex: props.flex,
+  overflowY: props.scrollable ? 'scroll' : undefined,
   '> *': {
     marginLeft: props.divider !== undefined ? props.divider : 8,
     marginRight: props.divider !== undefined ? props.divider : 8
@@ -112,6 +126,7 @@ const Field = Glamorous(Horizontal)({
 });
 
 export const Vertical = Glamorous.div<{
+  height?: any,
   justifyContent?: string,
   alignItems?: string,
   width?: any,
@@ -198,7 +213,7 @@ const flatPointsToPoints = (poinst: number[]) => {
     [])
 }
 
-class Polygon {
+export class Polygon {
   id: string;
   name: string;
   points: number[];
@@ -212,7 +227,7 @@ class AnimatonStep {
   opacity?: number;
   translate?: { x: number, y: number }
 }
-class Animation {
+export class Animation {
   id: string;
   name: string;
   steps: AnimatonStep[];
@@ -617,7 +632,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
 class EditorState {
   selectedScene?: string;
-  tab: 'polygons' | 'animations' | 'settings';
+  tab: 'polygons' | 'animations' | 'settings' | 'picker';
   blur?: boolean;
   fill?: boolean;
   animate: boolean;
@@ -746,7 +761,7 @@ function makeDraggable(target, parselId: string, dargCircleCallback: (pintId: nu
   svg.addEventListener('touchend', endDrag);
 }
 
-const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, dragCircles?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[], final: boolean) => void) => {
+export const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, middle?: boolean, dragCircles?: boolean, selected?: string, onSelect?: (id: string) => void, dragCallback?: (changedPolygonId: string, newPath: number[], final: boolean) => void) => {
   let polygonsReversed = [...polygons].reverse();
 
   let dots = []
@@ -792,7 +807,7 @@ const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: boolean, mi
     </svg>)
 }
 
-const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: string, dragCircles?: boolean) => {
+export const animation = (anims: Animation[], polygons: Polygon[], selectedPolygonId?: string, dragCircles?: boolean) => {
   let animationsKeyframes: any = {};
   let animations: any = {};
   for (let a of anims) {
@@ -995,7 +1010,8 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           <input style={{ opacity: 0, width: 1 }} type="file" id="file" onChange={this.import} />
           <Button onClick={this.undo} disabled={this.stateStack.length === 0 || this.undoPointer === 0}><i className="material-icons">undo</i></Button>
           <Button onClick={this.redo} disabled={this.undoPointer === this.stateStack.length - 1}><i className="material-icons">redo</i></Button>
-          <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button>
+          {/* <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button> */}
+          <Button onClick={() => this.setState({ tab: "picker" })} disabled={this.state.tab === 'picker'} active={true}><i className="material-icons">folder_open</i></Button>
           <Button onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
         {(this.state.tab === 'polygons' || this.state.tab === 'animations') && (
@@ -1103,6 +1119,12 @@ export class SceneEditor extends React.Component<{}, EditorState> {
             <Horizontal onClick={() => this.switchFlag('animate')}><Input key="animate" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.animate)} onChange={() => { }} />animate </Horizontal>
             <Horizontal onClick={() => this.switchFlag('dragCircles')}><Input key="dragCircles" type="checkbox" style={{ marginRight: 8 }} checked={!!(this.state.dragCircles)} onChange={() => { }} />dragCircles </Horizontal>
           </Vertical>
+        )}
+        {this.state.tab === 'picker' && (
+          <ScenePicker onclick={id => {
+            // TODO switch scene 
+            // this.setState({ selectedScene: id })
+          }} />
         )}
         <StyledScene style={{
           flexGrow: 1,
