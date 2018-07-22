@@ -340,9 +340,9 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
         if (this.dragPlaceholder) {
             let offsetx = e.target.parentElement.scrollLeft;
             let offsety = e.target.parentElement.scrollTop;
-            let x = e.clientX + offsetx;
-            // ugly fix - find top offset
-            let y = e.pageY + offsety - 50;
+            // ugly fix - find top/left offset
+            let x = e.clientX + offsetx - 74;
+            let y = e.pageY + offsety - 58;
 
             x = x - (x % (episodeWidth + gridGap)) + gridGap / 2;
             y = y - (y % (episodeHeight + gridGap)) + gridGap / 2;
