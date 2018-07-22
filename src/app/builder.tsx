@@ -733,6 +733,10 @@ export class Builder extends React.Component<{}, BuilderState>{
         let cMap = {};
         cMap[rootChapter.id] = { chapter: rootChapter };
 
+        //recover editor state
+        let builderState = JSON.parse(window.localStorage.getItem('builderState'));
+
+
         this.state = {
             root: root,
             timeLine: [rootChapter],
@@ -740,7 +744,12 @@ export class Builder extends React.Component<{}, BuilderState>{
             chapterMap: cMap,
             selectedChapter: rootChapter.id,
             selectedepisode: root.id,
+            ...builderState
         }
+    }
+
+    componentDidUpdate() {
+        window.localStorage.setItem('builderState', JSON.stringify(this.state));
     }
 
     newEpisode = (targetChapter?: string) => {
