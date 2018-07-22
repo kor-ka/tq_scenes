@@ -24,6 +24,10 @@ const RootSidebar = Glamorous(Vertical)({
     backgroundColor: accentColor,
 });
 
+const BuilderStyled = Glamorous(Builder)({
+    width: 'calc(100% - 74px)'
+});
+
 export class Root extends React.Component<{}, {
     tab: 'builder' | 'editor',
 }>{
@@ -38,12 +42,12 @@ export class Root extends React.Component<{}, {
     }
     render() {
         return (
-            <Horizontal divider={0} height="100%">
+            <Horizontal divider={0} height="100%" >
                 <RootSidebar padding="16px">
                     <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
                     <TabButton color="white" onClick={() => this.setState({ tab: "editor" })} disabled={this.state.tab === 'editor'} active={true}><i className="material-icons">photo</i></TabButton>
                 </RootSidebar>
-                {this.state.tab === 'builder' && <Builder />}
+                {this.state.tab === 'builder' && <BuilderStyled />}
                 {this.state.tab === 'editor' && <SceneEditor />}
             </Horizontal>
         );

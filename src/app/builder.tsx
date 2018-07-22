@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Glamorous from 'glamorous';
 import { Vertical, Input, Horizontal, Button, TextArea, Select } from './editor';
+import { getId } from './utils/id';
 
 interface StoryState {
     story: Content[];
@@ -10,12 +11,6 @@ interface StoryState {
 }
 
 type ContentType = 'text' | 'image';
-
-let lastId = new Date().getTime();
-const getId = () => {
-    lastId += 1;
-    return lastId;
-}
 
 class Content {
     id: string;
@@ -269,7 +264,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
             let fromEpisode = this.props.eMap[from.episodeId];
             for (let reactionResolver of fromEpisode.reactionReasolvers) {
                 if (reactionResolver.reaction.nextEpisode) {
-                    
+
                     let rectFrom = {
                         left: ((from.x) * (episodeWidth + gridGap)) + 2 + gridGap / 2,
                         right: ((from.x) * (episodeWidth + gridGap)) + 2 + episodeWidth + gridGap / 2,
@@ -278,7 +273,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     };
 
                     let to = this.props.chapter.map[reactionResolver.reaction.nextEpisode];
-                    to = to || {x: from.x, y: from.y, episodeId: reactionResolver.reaction.nextEpisode};
+                    to = to || { x: from.x, y: from.y, episodeId: reactionResolver.reaction.nextEpisode };
                     let toEpisodeId = reactionResolver.reaction.nextEpisode;
 
                     let rectTo = {
@@ -439,7 +434,8 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 }
 
 const ChapterMap = Glamorous(ChapterComponent)({
-    height: 'calc(50% - 50px)'
+    height: 'calc(50% - 50px)',
+    overflow: 'scroll'
 });
 
 const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
@@ -507,7 +503,7 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     }
 
     render() {
-        
+
         return (
             <Vertical onDragStart={this.onDragStart} onDragEnd={this.onDragEnd} onDragLeave={this.onDragLeave} onDragOver={this.onDragOver} onDrop={this.onDrop}>
                 <ChapterListItemStyled dragOver={this.state.dragOver && ChapterListItem.anyDragged} draggable={true} onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
@@ -805,7 +801,7 @@ export class Builder extends React.Component<{}, BuilderState>{
     render() {
         return (
             <MapsProvider.Provider value={{ eMap: this.state.episodesMap, cMap: this.state.chapterMap }}>
-                <Vertical height='100vh' divider={0}>
+                <Vertical divider={0} className={(this.props as any).className}>
                     <ChapterList>
                         {this.state.timeLine.map((cId: string, i: number) => <ChapterListItem key={cId} item={this.state.chapterMap[cId]} index={i} onClick={() => this.setState({ selectedChapter: cId })} selected={cId === this.state.selectedChapter} move={this.moveChapter} />)}
                         <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>

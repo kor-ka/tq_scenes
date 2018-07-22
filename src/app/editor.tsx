@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as glamor from 'glamor';
 import Glamorous from 'glamorous';
 import { SketchPicker as SketchPickerRaw } from 'react-color';
+import { getId } from './utils/id';
 
 const SketchPicker = Glamorous(SketchPickerRaw)({
   boxShadow: 'none !important',
@@ -83,9 +84,10 @@ export const TextArea = Glamorous.textarea({
   backgroundColor: 'transparent'
 });
 
-export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, height?: any, zIndex?: number, divider?: number }>(props => ({
+export const Horizontal = Glamorous.div<{ flex?: number, justifyContent?: string, width?: any, height?: any, zIndex?: number, divider?: number }>(props => ({
   width: props.width,
   height: props.height,
+  flex: props.flex,
   display: 'flex',
   flexDirection: 'row',
   justifyContent: props.justifyContent || 'start',
@@ -614,6 +616,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
 
 class EditorState {
+  selectedScene?: string;
   tab: 'polygons' | 'animations' | 'settings';
   blur?: boolean;
   fill?: boolean;
@@ -845,14 +848,20 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   constructor(props: EditorState) {
     super(props);
 
-    //recover scene state
-    let polygons = JSON.parse(window.localStorage.getItem('polygons'))
-    polygons = polygons || [polygonItem, polygonItem2];
-    let animations = JSON.parse(window.localStorage.getItem('animations'))
-    animations = animations || [glow, move];
-
     //recover editor state
-    let editorState = JSON.parse(window.localStorage.getItem('editorState'));
+    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState'));
+
+    //recover scene state
+    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+
+    let polygons = [polygonItem, polygonItem2];
+    let animations = [glow, move];
+    let selectedScene = scenes[editorState.selectedScene];
+    if (selectedScene) {
+      console.warn(selectedScene);
+      polygons = selectedScene.polygons || polygons;
+      animations = selectedScene.animations || animations;
+    }
 
     this.state = {
       tab: 'polygons',
@@ -896,12 +905,15 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   }
 
   componentDidUpdate() {
-    window.localStorage.setItem('polygons', JSON.stringify(this.state.polygons));
-    window.localStorage.setItem('animations', JSON.stringify(this.state.animations));
+    let { polygons, animations, selectedScene, ...editorState } = this.state;
 
-    let { polygons, animations, ...editorState } = this.state;
     window.localStorage.setItem('editorState', JSON.stringify(editorState));
 
+    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+
+    scenes[selectedScene] = { id: selectedScene, polygons: polygons, animations: animations };
+
+    window.localStorage.setItem('scenes', JSON.stringify(scenes));
   }
 
   switchFlag(key: string) {
