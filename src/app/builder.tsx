@@ -137,64 +137,12 @@ class Episode {
 class Chapter {
     id: string;
     name: string;
-    map: { [episodeId: string]: { x: number, y: number, episode: Episode } } = {};
-    dummy = () => {
-
-        let parent = new Episode();
-        for (let i = 0; i < 20; i++) {
-            let episode = new Episode();
-            episode.name = 'dummy_' + i;
-            parent.reactionReasolvers.push({ reaction: new ReactionClosedText('to_' + episode.name, episode.id) })
-            if (i % 3 === 0) {
-                parent = episode
-            }
-            this.map[episode.id] = { episode: episode, x: 0, y: 0 };
-        }
-
-        return this;
-
-    }
+    map: { [episodeId: string]: { x: number, y: number, episodeId: string } } = {};
 
     constructor() {
         this.id = 'chapter_' + getId();
-        this.name = 'Chapter'
+        this.name = 'Chapter';
     }
-
-    layout = () => {
-        let references: { [key: string]: any } = {};
-
-        // default layout
-        let nextLayer = [{ element: this.map[Object.keys(this.map)[0]].episode, layer: 0, order: 0 }];
-        let lastLayer = 0;
-        let nextLayerOrder = 0;
-        while (nextLayer.length !== 0) {
-            let node = nextLayer.shift();
-            //prevent loop reference
-            if (references[node.element.id]) {
-                continue;
-            }
-            references[node.element.id] = node.element;
-
-            nextLayerOrder = lastLayer === node.layer ? nextLayerOrder : node.order;
-            for (let reaction of node.element.reactionReasolvers) {
-                if (reaction.reaction.nextEpisode) {
-
-                    let target = this.map[reaction.reaction.nextEpisode].episode;
-                    if (target) {
-                        nextLayer.push({ element: target, layer: node.layer + 1, order: nextLayerOrder++ });
-                    }
-
-                }
-            }
-            this.map[node.element.id] = { y: node.order, x: node.layer, episode: node.element };
-
-            lastLayer = node.layer;
-
-        }
-
-        return this;
-    }
-
 }
 
 const episodeBorder = 1;
@@ -206,23 +154,28 @@ const EpisodeDiv = Glamorous(Vertical)<{ selected: boolean }>((props) => ({
     height: '100%'
 }));
 
-const MapsProvider = React.createContext<{ eMap: { [id: string]: { episode: Episode } }, cMap: { [id: string]: { chapter: Chapter } } }>({ eMap: {}, cMap: {} });
+const MapsProvider = React.createContext<{ eMap: { [id: string]: Episode }, cMap: { [id: string]: Chapter } }>({ eMap: {}, cMap: {} });
 
-class EpisodeComponent extends React.Component<{ episode: Episode, selected: boolean, onClick: () => void }>{
+class EpisodeComponent extends React.Component<{ episodeId: string, selected: boolean, onClick: () => void }>{
     element?: HTMLElement;
     onEpisodeCreated = (e: HTMLElement) => {
         this.element = e;
     }
 
     onDragStart = (e) => {
-        e.dataTransfer.setData('id', this.props.episode.id);
+        e.dataTransfer.setData('id', this.props.episodeId);
     }
 
     render() {
         return (
-            <EpisodeDiv onClick={this.props.onClick} draggable={true} selected={this.props.selected} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
-                {this.props.episode.name}
-            </EpisodeDiv>
+            <MapsProvider.Consumer>
+                {data =>
+                    <EpisodeDiv onClick={this.props.onClick} draggable={true} selected={this.props.selected} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
+                        {data.eMap[this.props.episodeId].name}
+                    </EpisodeDiv>
+                }
+            </MapsProvider.Consumer>
+
         );
     }
 }
@@ -268,6 +221,7 @@ const hashCode = (s) => {
 };
 interface ChapterComponentProps {
     chapter: Chapter;
+    eMap: { [key: string]: Episode };
     selectedEpisode: string;
     onChange: (chapterId: string, episodeId: string, x: number, y: number) => void;
     createEpiside: () => void;
@@ -303,7 +257,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
             e = props.chapter.map[eKey];
             this.maxX = Math.max(this.maxX, e.x);
             this.maxY = Math.max(this.maxY, e.y);
-            this.episodesCordinates[e.x + '_' + e.y] = e.episode.id;
+            this.episodesCordinates[e.x + '_' + e.y] = e.episodeId;
         }
     }
 
@@ -312,15 +266,20 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 
         for (let eKey of Object.keys(this.props.chapter.map)) {
             let from = this.props.chapter.map[eKey];
-            for (let reactionResolver of from.episode.reactionReasolvers) {
+            let fromEpisode = this.props.eMap[from.episodeId];
+            for (let reactionResolver of fromEpisode.reactionReasolvers) {
                 if (reactionResolver.reaction.nextEpisode) {
-                    let to = this.props.chapter.map[reactionResolver.reaction.nextEpisode];
+                    
                     let rectFrom = {
                         left: ((from.x) * (episodeWidth + gridGap)) + 2 + gridGap / 2,
                         right: ((from.x) * (episodeWidth + gridGap)) + 2 + episodeWidth + gridGap / 2,
                         top: ((from.y) * (episodeHeight + gridGap)) + 2 + gridGap / 2,
                         bottom: ((from.y) * (episodeHeight + gridGap)) + 2 + episodeHeight + gridGap / 2,
                     };
+
+                    let to = this.props.chapter.map[reactionResolver.reaction.nextEpisode];
+                    to = to || {x: from.x, y: from.y, episodeId: reactionResolver.reaction.nextEpisode};
+                    let toEpisodeId = reactionResolver.reaction.nextEpisode;
 
                     let rectTo = {
                         left: ((to.x) * (episodeWidth + gridGap)) + 2 + gridGap / 2,
@@ -336,9 +295,9 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
 
 
-                    let color = colors2[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length];
+                    let color = colors2[Math.abs(hashCode(reactionResolver.reaction.id + toEpisodeId)) % colors.length];
 
-                    lines.push(<marker key={'arrow_' + from.episode.id + '_' + to.episode.id} id={'arrow_' + from.episode.id + '_' + to.episode.id} markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
+                    lines.push(<marker key={'arrow_' + fromEpisode.id + '_' + toEpisodeId} id={'arrow_' + fromEpisode.id + '_' + toEpisodeId} markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
                         <path d="M0,0 L0,1 L1.5,0.5 z" fill={color} />
                     </marker>);
                     //marker corrections
@@ -362,9 +321,9 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     let xm2 = xf - (xf - xt) / 2;;
                     let ym2 = yt;
 
-                    // console.warn(hashCode(from.episode.id + to.episode.id) % colors.length);
-                    // lines.push(<polyline key={'connect_1' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors[Math.abs(hashCode(reactionResolver.reaction.id + to.episode.id)) % colors.length]), strokeWidth: 10, strokeDasharray: '5,5', opacity: 1 }} />);
-                    lines.push(<polyline key={'connect_2' + from.episode.id + '_' + to.episode.id} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: color, strokeWidth: 10, opacity: 0.5 }} markerEnd={`url(#${'arrow_' + from.episode.id + '_' + to.episode.id})`} />);
+                    // console.warn(hashCode(fromEpisode.id + toEpisodeId) % colors.length);
+                    // lines.push(<polyline key={'connect_1' + fromEpisode.id + '_' + toEpisodeId} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: (colors[Math.abs(hashCode(reactionResolver.reaction.id + toEpisodeId)) % colors.length]), strokeWidth: 10, strokeDasharray: '5,5', opacity: 1 }} />);
+                    lines.push(<polyline key={'connect_2' + fromEpisode.id + '_' + toEpisodeId} points={`${xf} ${yf} ${xm1} ${ym1} ${xm2} ${ym2}  ${xt} ${yt}`} fill="none" style={{ stroke: color, strokeWidth: 10, opacity: 0.5 }} markerEnd={`url(#${'arrow_' + fromEpisode.id + '_' + toEpisodeId})`} />);
                 }
             }
         }
@@ -427,7 +386,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
         let items = [];
         for (let ekey of Object.keys(this.props.chapter.map)) {
             let e = this.props.chapter.map[ekey];
-            items.push(<ChapterItem onClick={() => this.props.selectEpisode(e.episode.id)} key={e.episode.id} episode={e.episode} x={e.x + 1} y={e.y + 1} selected={this.props.selectedEpisode === e.episode.id} />);
+            items.push(<ChapterItem onClick={() => this.props.selectEpisode(e.episodeId)} key={e.episodeId} episodeId={e.episodeId} x={e.x + 1} y={e.y + 1} selected={this.props.selectedEpisode === e.episodeId} />);
         }
 
         let w = this.state.columns * episodeWidth + (this.state.columns - 1) * gridGap;
@@ -499,7 +458,7 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     static anyDragged = false;
     constructor(props: any) {
         super(props);
-        this.state = { dragOver: false, dragging: false, chapterName: props.item.name };
+        this.state = { dragOver: false, dragging: false, chapterName: props.item && props.item.name };
     }
 
     onDragStart = (e) => {
@@ -548,6 +507,7 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     }
 
     render() {
+        
         return (
             <Vertical onDragStart={this.onDragStart} onDragEnd={this.onDragEnd} onDragLeave={this.onDragLeave} onDragOver={this.onDragOver} onDrop={this.onDrop}>
                 <ChapterListItemStyled dragOver={this.state.dragOver && ChapterListItem.anyDragged} draggable={true} onClick={() => this.props.onClick(this.props.item.id)} selected={this.props.selected}>
@@ -597,7 +557,7 @@ class ReactionClosedTextettings extends React.Component<{ content: ReactionClose
                 }} value={this.props.content.nextEpisode}>
                     <option key="none" value="">no connection</option>
                     <MapsProvider.Consumer>
-                        {maps => Object.keys(maps.eMap).map(eKey => <option key={eKey} value={maps.eMap[eKey].episode.id} >{maps.eMap[eKey].episode.name}</option>)}
+                        {maps => Object.keys(maps.eMap).map(eKey => <option key={eKey} value={maps.eMap[eKey].id} >{maps.eMap[eKey].name}</option>)}
                     </MapsProvider.Consumer>
                 </Select>
             </>
@@ -707,9 +667,9 @@ const ChapterList = Glamorous.div({
 
 interface BuilderState {
     root: Episode,
-    episodesMap: { [key: string]: { episode: Episode } }
-    timeLine: Chapter[],
-    chapterMap: { [key: string]: { chapter: Chapter } }
+    episodesMap: { [key: string]: Episode }
+    timeLine: string[],
+    chapterMap: { [key: string]: Chapter }
     selectedChapter: string,
     selectedepisode: string,
 }
@@ -719,7 +679,6 @@ const BottomConstainer = Glamorous(Horizontal)({
     width: '100%'
 });
 
-// TODO keep ONE map, other - ids
 export class Builder extends React.Component<{}, BuilderState>{
     constructor(props: any) {
         super(props);
@@ -727,16 +686,17 @@ export class Builder extends React.Component<{}, BuilderState>{
 
         let rootChapter = new Chapter();
         rootChapter.name = 'Chapter 1';
-        rootChapter.map[root.id] = { episode: root, x: 0, y: 0 };
+        rootChapter.map[root.id] = { episodeId: root.id, x: 0, y: 0 };
 
-        let eMap = { ...rootChapter.map };
+        let eMap = {};
+        eMap[root.id] = root;
 
         let cMap = {};
-        cMap[rootChapter.id] = { chapter: rootChapter };
+        cMap[rootChapter.id] = rootChapter;
 
-        let defaultState = {
+        let defaultState: BuilderState = {
             root: root,
-            timeLine: [rootChapter],
+            timeLine: [rootChapter.id],
             episodesMap: eMap,
             chapterMap: cMap,
             selectedChapter: rootChapter.id,
@@ -747,7 +707,7 @@ export class Builder extends React.Component<{}, BuilderState>{
         let builderState = JSON.parse(window.localStorage.getItem('builderState')) || defaultState;
 
         this.state = {
-
+            // ...defaultState
             ...builderState
         }
     }
@@ -759,9 +719,9 @@ export class Builder extends React.Component<{}, BuilderState>{
     newEpisode = (targetChapter?: string) => {
         let e = new Episode();
         let map = { ...this.state.episodesMap };
-        map[e.id] = { episode: e };
+        map[e.id] = e;
 
-        let chapter = this.state.chapterMap[targetChapter || this.state.selectedChapter].chapter;
+        let chapter = this.state.chapterMap[targetChapter || this.state.selectedChapter];
 
         // find place
         let x = 0;
@@ -778,10 +738,10 @@ export class Builder extends React.Component<{}, BuilderState>{
             }
         }
 
-        chapter.map[e.id] = { episode: e, x: x, y: 0 };
+        chapter.map[e.id] = { episodeId: e.id, x: x, y: 0 };
 
         let newCMap = { ...this.state.chapterMap };
-        newCMap[chapter.id].chapter.map[e.id] = chapter.map[e.id];
+        newCMap[chapter.id].map[e.id] = chapter.map[e.id];
 
         this.setState({
             episodesMap: map,
@@ -794,8 +754,8 @@ export class Builder extends React.Component<{}, BuilderState>{
     newChapter = () => {
         let chapter = new Chapter();
         let map = { ...this.state.chapterMap };
-        map[chapter.id] = { chapter: chapter };
-        let timeLine = [...this.state.timeLine, chapter]
+        map[chapter.id] = chapter;
+        let timeLine = [...this.state.timeLine, chapter.id]
         this.setState({
             chapterMap: map,
             selectedChapter: chapter.id,
@@ -806,7 +766,7 @@ export class Builder extends React.Component<{}, BuilderState>{
     }
 
     onChapterLayoutRequestsChange = (chapterId: string, epsodeId: string, x: number, y: number) => {
-        let targetChapter = this.state.chapterMap[chapterId].chapter;
+        let targetChapter = this.state.chapterMap[chapterId];
         if (targetChapter) {
             let targetEpisode = targetChapter.map[epsodeId];
             if (targetEpisode) {
@@ -814,7 +774,7 @@ export class Builder extends React.Component<{}, BuilderState>{
                 targetEpisode.y = y;
 
                 let newCMap = { ...this.state.chapterMap };
-                newCMap[targetChapter.id].chapter.map[targetEpisode.episode.id] = targetChapter.map[targetEpisode.episode.id];
+                newCMap[targetChapter.id].map[targetEpisode.episodeId] = targetChapter.map[targetEpisode.episodeId];
                 this.setState({
                     chapterMap: newCMap
                 })
@@ -833,21 +793,9 @@ export class Builder extends React.Component<{}, BuilderState>{
 
     updateEpisode = (e: Episode) => {
         // todo: capture incoming connection
-
         let newMap = { ...this.state.episodesMap };
-        let newCMap = { ...this.state.chapterMap };
-        newMap[e.id] = { episode: e };
-
-        let c = this.state.chapterMap[this.state.selectedChapter].chapter
-        if (c) {
-            let eMapped = c.map[e.id];
-            if (eMapped) {
-                c.map[e.id] = { ...eMapped, episode: e };
-                newCMap[c.id].chapter.map[e.id] = c.map[e.id];
-            }
-        }
-
-        this.setState({ episodesMap: newMap, chapterMap: newCMap });
+        newMap[e.id] = e;
+        this.setState({ episodesMap: newMap });
     }
 
     selectEpisode = (id: string) => {
@@ -859,12 +807,12 @@ export class Builder extends React.Component<{}, BuilderState>{
             <MapsProvider.Provider value={{ eMap: this.state.episodesMap, cMap: this.state.chapterMap }}>
                 <Vertical height='100vh' divider={0}>
                     <ChapterList>
-                        {this.state.timeLine.map((c: Chapter, i: number) => <ChapterListItem key={c.id} item={c} index={i} onClick={() => this.setState({ selectedChapter: c.id })} selected={c.id === this.state.selectedChapter} move={this.moveChapter} />)}
+                        {this.state.timeLine.map((cId: string, i: number) => <ChapterListItem key={cId} item={this.state.chapterMap[cId]} index={i} onClick={() => this.setState({ selectedChapter: cId })} selected={cId === this.state.selectedChapter} move={this.moveChapter} />)}
                         <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
                     </ChapterList>
-                    <ChapterMap selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter].chapter} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
+                    <ChapterMap eMap={this.state.episodesMap} selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
                     <BottomConstainer>
-                        <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode].episode} onChange={this.updateEpisode} />
+                        <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode]} onChange={this.updateEpisode} />
                     </BottomConstainer>
                 </ Vertical>
             </MapsProvider.Provider>
