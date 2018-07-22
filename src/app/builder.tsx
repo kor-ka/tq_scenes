@@ -343,17 +343,17 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     </marker>);
                     //marker corrections
                     if (yt === rectTo.top) {
-                        yt -= 15;
+                        yt -= 25;
                     }
                     if (yt === rectTo.bottom) {
-                        yt += 15;
+                        yt += 25;
                     }
 
                     if (xt === rectTo.left) {
-                        xt -= 15;
+                        xt -= 25;
                     }
                     if (xt === rectTo.right) {
-                        xt += 15;
+                        xt += 25;
                     }
 
                     let xm1 = xf - (xf - xt) / 2;
@@ -807,6 +807,8 @@ export class Builder extends React.Component<{}, BuilderState>{
                 this.setState({
                     timeLine: this.state.timeLine
                 })
+                let newCMap = { ...this.state.chapterMap };
+                newCMap[targetChapter.id].chapter.map[targetEpisode.episode.id] = targetChapter.map[targetEpisode.episode.id];
             }
         }
     }
