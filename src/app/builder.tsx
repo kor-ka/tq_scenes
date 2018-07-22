@@ -638,12 +638,12 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
                     {this.props.episode.contentReasolvers.map(c =>
                         <ContentRender key={c.content.id} content={c.content} onClick={this.selectElement} />
                     )}
-                    <Button onClick={this.addContent} style={{ alignSelf: 'flex-start' }} color="blue"><i className="material-icons">add</i><i className="material-icons">edit</i></Button>
+                    <Button onClick={this.addContent} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">edit</i></Button>
 
                     {this.props.episode.reactionReasolvers.map(c =>
                         <ContentRender key={c.reaction.id} content={c.reaction} onClick={this.selectElement} />
                     )}
-                    <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="blue"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
+                    <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
 
                 </Vertical>
                 <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />

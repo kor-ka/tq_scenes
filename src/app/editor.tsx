@@ -7,7 +7,7 @@ import { SketchPicker as SketchPickerRaw } from 'react-color';
 const SketchPicker = Glamorous(SketchPickerRaw)({
   boxShadow: 'none !important',
   width: '226 !important',
-  border: 'solid 1px blue',
+  border: 'solid 1px #3E5C6B',
   borderRadius: 8
 
 });
@@ -25,15 +25,15 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
 export const Button = Glamorous.button<{ color?: string, active?: boolean }>(props => ({
   cursor: 'pointer',
   padding: 8,
-  color: props.color || 'blue',
+  color: props.color || '#3E5C6B',
   borderStyle: 'solid',
   borderWidth: 1,
   backgroundColor: 'transparent',
-  borderColor: props.color || 'blue',
+  borderColor: props.color || '#3E5C6B',
   borderRadius: 8,
   minHeight: 40,
   ':hover': {
-    backgroundColor: props.color || 'blue',
+    backgroundColor: props.color || '#3E5C6B',
     color: 'white',
   },
   ':disabled': {
@@ -43,10 +43,10 @@ export const Button = Glamorous.button<{ color?: string, active?: boolean }>(pro
     color: 'white',
     borderColor: 'gray',
     ...(props.active ? {
-      backgroundColor: props.color || 'blue',
+      backgroundColor: props.color || '#3E5C6B',
       color: 'white',
       opacity: 1,
-      borderColor: props.color || 'blue',
+      borderColor: props.color || '#3E5C6B',
     } : {
         opacity: 0.2,
 
@@ -59,7 +59,7 @@ export const Button = Glamorous.button<{ color?: string, active?: boolean }>(pro
 }));
 
 export const Select = Glamorous.select({
-  border: 'solid 1px blue',
+  border: 'solid 1px #3E5C6B',
   borderRadius: 8,
   height: 40,
   minHeight: 40,
@@ -71,7 +71,7 @@ export const Input = Glamorous.input({
   minHeight: 24,
   outline: 0,
   borderWidth: '0 0 1px',
-  borderColor: 'blue',
+  borderColor: '#3E5C6B',
   backgroundColor: 'transparent'
 });
 
@@ -79,12 +79,13 @@ export const TextArea = Glamorous.textarea({
   minHeight: 24,
   outline: 0,
   borderWidth: '0 0 1px',
-  borderColor: 'blue',
+  borderColor: '#3E5C6B',
   backgroundColor: 'transparent'
 });
 
-export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, zIndex?: number, divider?: number }>(props => ({
+export const Horizontal = Glamorous.div<{ justifyContent?: string, width?: any, height?: any, zIndex?: number, divider?: number }>(props => ({
   width: props.width,
+  height: props.height,
   display: 'flex',
   flexDirection: 'row',
   justifyContent: props.justifyContent || 'start',
@@ -442,7 +443,7 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
         />
 
         <select style={{
-          border: 'solid 1px blue',
+          border: 'solid 1px #3E5C6B',
           borderRadius: 8,
           height: 40,
           minHeight: 40,
@@ -464,7 +465,7 @@ class PolygonFullItem extends React.Component<{ item: Polygon, animations: Anima
 
             this.props.move(this.props.index, this.props.index + 1);
           }} disabled={this.props.isLast}> <i className="material-icons">flip_to_back</i> </Button>
-          <Button key={'copy'} color='blue' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i></Button>
+          <Button key={'copy'} color='#3E5C6B' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i></Button>
 
         </Horizontal>
 
@@ -520,21 +521,21 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
             {k === 0 && (
               <div style={{
                 borderRadius: 10,
-                border: '1px solid blue',
+                border: '1px solid #3E5C6B',
                 alignSelf: 'center',
                 flexShrink: 0,
-                color: 'blue',
+                color: '#3E5C6B',
                 padding: 8
               }} >start</div>
             )}
             <div style={{
               height: 100 * step.timing / stepsTime,
               width: 0,
-              border: '1px solid blue',
+              border: '1px solid #3E5C6B',
               alignSelf: 'center',
               flexShrink: 0
             }} />
-            <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: 'blue', borderRadius: 8, padding: 8 }}>
+            <Vertical key={k} style={{ borderStyle: 'solid', borderWidth: 1, borderColor: '#3E5C6B', borderRadius: 8, padding: 8 }}>
               <Field>
                 delay:
               <Input value={step.timing} onChange={(v: any) => {
@@ -602,7 +603,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
         }}> <i className="material-icons">add</i></Button>
 
         <Field style={{ marginBottom: 16 }}>
-          <Button color='blue' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i> </Button>
+          <Button color='#3E5C6B' onClick={() => this.props.copy(this.props.item.id)}><i className="material-icons">file_copy</i> </Button>
           <Button color='red' onClick={() => this.props.delete(this.props.item.id)}><i className="material-icons">delete</i> </Button>
         </Field>
       </Vertical>

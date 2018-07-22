@@ -3,8 +3,8 @@ import * as ReactDOM from 'react-dom';
 import { SceneEditor } from './editor';
 import { SceneComponent } from './scene';
 import { Builder } from './builder';
+import { Root } from './root';
 ReactDOM.render(
-  <Builder />,
-  // <SceneEditor />,
+  <Root />,
   document.getElementById("root")
 );
