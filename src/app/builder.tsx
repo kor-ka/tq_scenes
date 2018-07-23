@@ -653,7 +653,6 @@ const ChapterList = Glamorous.div({
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'start',
-    flexGrow: 1,
     flexShrink: 0,
     overflowX: 'scroll',
     overflowY: 'hidden',

@@ -864,7 +864,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     super(props);
 
     //recover editor state
-    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState'));
+    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
 
     //recover scene state
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
@@ -1121,7 +1121,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
           </Vertical>
         )}
         {this.state.tab === 'picker' && (
-          <ScenePicker onclick={id => {
+          <ScenePicker create={true} onclick={id => {
             // TODO switch scene 
             // this.setState({ selectedScene: id })
           }} />
