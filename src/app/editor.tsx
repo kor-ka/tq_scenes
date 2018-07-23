@@ -867,7 +867,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
 
     //recover scene state
-    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+    let scenes = JSON.parse(window.localStorage.getItem('scenes'));
 
     let polygons = [polygonItem, polygonItem2];
     let animations = [glow, move];
@@ -1122,8 +1122,22 @@ export class SceneEditor extends React.Component<{}, EditorState> {
         )}
         {this.state.tab === 'picker' && (
           <ScenePicker create={true} onclick={id => {
-            // TODO switch scene 
-            // this.setState({ selectedScene: id })
+            if (id !== this.state.selectedScene) {
+              let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+
+              let selectedScene = scenes[id];
+              if (selectedScene) {
+                let polygons = selectedScene.polygons || [];
+                let animations = selectedScene.animations || [];
+                this.setState({
+                  polygons: polygons,
+                  animations: animations,
+                  selectedA: undefined,
+                  selectedP: undefined,
+                  selectedScene: id,
+                });
+              }
+            }
           }} />
         )}
         <StyledScene style={{
