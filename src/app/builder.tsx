@@ -2,6 +2,7 @@ import * as React from 'react';
 import Glamorous from 'glamorous';
 import { Vertical, Input, Horizontal, Button, TextArea, Select } from './editor';
 import { getUid } from './utils/id';
+import { Scene, ScenePicker } from './scenePicker';
 
 interface StoryState {
     story: Content[];
@@ -584,22 +585,26 @@ class ContenSettings<C extends Content | Reaction> extends React.Component<{ con
 }
 
 class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void }, {
-    selectedElement?: string,
+    selectedElement?: string | 'scene',
 }>{
     constructor(props: { episode: Episode, onChange: (episode: Episode) => void }) {
         super(props);
         let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
-        this.state = { selectedElement: element ? (element.content || element.reaction).id : undefined };
+        this.state = { selectedElement: element ? (element.content || element.reaction).id : 'scene' };
     }
 
     componentWillReceiveProps(props: { episode: Episode }) {
         let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
         if (this.props.episode.id !== props.episode.id) {
-            this.setState({ selectedElement: element ? (element.content || element.reaction).id : undefined });
+            this.setState({ selectedElement: element ? (element.content || element.reaction).id : 'scene' });
         }
     }
     rename = (v: any) => {
         this.props.onChange({ ...this.props.episode, name: v.target.value });
+    }
+
+    setScene = (id: string) => {
+        this.props.onChange({ ...this.props.episode, sceneId: id });
     }
 
     selectElement = (target: { id: string }) => {
@@ -626,11 +631,15 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
     }
 
     render() {
+        console.warn(this.props.episode.sceneId);
         let elementContainer: { content?: Content, reaction?: Reaction } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
             <Horizontal width="100%">
                 <Vertical flex={1} padding="16px" scrollable={true} alignItems="flex-start">
+
+
                     <Input value={this.props.episode.name} onChange={this.rename} />
+                    <Scene id={this.props.episode.sceneId} onClick={() => this.setState({ selectedElement: 'scene' })} />
                     {this.props.episode.contentReasolvers.map(c =>
                         <ContentRender key={c.content.id} content={c.content} onClick={this.selectElement} />
                     )}
@@ -642,7 +651,12 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
                     <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
 
                 </Vertical>
-                <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
+                {this.state.selectedElement !== 'scene' && (
+                    <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
+                )}
+                 {this.state.selectedElement === 'scene' && (
+                     <ScenePicker onclick={this.setScene}/>
+                )}
             </Horizontal>
         );
     }

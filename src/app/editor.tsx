@@ -856,11 +856,11 @@ export const animation = (anims: Animation[], polygons: Polygon[], selectedPolyg
 
 }
 
-export class SceneEditor extends React.Component<{}, EditorState> {
+export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id: string]: { polygons: Polygon[], animations: Animation[] } }) => void }, EditorState> {
   stateStack = [];
   undoPointer = 0;
   preventStackState = false;
-  constructor(props: EditorState) {
+  constructor(props: any) {
     super(props);
 
     //recover editor state
@@ -894,6 +894,9 @@ export class SceneEditor extends React.Component<{}, EditorState> {
   }
 
   componentWillUpdate(nextPros: {}, nexState: EditorState) {
+    if(nexState.selectedScene !== this.state.selectedScene){
+      return;
+    }
     let scrollToSelected = nexState.selectedP != this.state.selectedP && nexState.selectPSource === 'scene';
 
     if (!this.preventStackState && (nexState.animations !== this.state.animations || nexState.polygons !== this.state.polygons)) {
@@ -927,7 +930,7 @@ export class SceneEditor extends React.Component<{}, EditorState> {
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
 
     scenes[selectedScene] = { id: selectedScene, polygons: polygons, animations: animations };
-
+    this.props.onChanged(scenes);
     window.localStorage.setItem('scenes', JSON.stringify(scenes));
   }
 

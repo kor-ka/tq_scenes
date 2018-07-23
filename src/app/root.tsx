@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Horizontal, Vertical, Button, SceneEditor } from './editor';
 import { Builder } from './builder';
 import Glamorous from '../../node_modules/glamorous';
+import { Scenes } from './app';
 
 const accentColor = '#3E5C6B';
 
@@ -30,16 +31,25 @@ const BuilderStyled = Glamorous(Builder)({
 
 export class Root extends React.Component<{}, {
     tab: 'builder' | 'editor',
+    scenes: any,
 }>{
     constructor(props: {}) {
         super(props);
         let savedState = JSON.parse(window.localStorage.getItem('rootState'));
 
-        this.state = { tab: 'builder', ...(savedState || {}) };
+        // TODO save/load here
+        this.state = { tab: 'builder', ...(savedState || {}), scenes: {} };
     }
     componentDidUpdate() {
         window.localStorage.setItem('rootState', JSON.stringify(this.state));
     }
+
+    scenesUpdated = (scenes: any) => {
+        this.setState({
+            scenes: scenes
+        });
+    }
+
     render() {
         return (
             <Horizontal divider={0} height="100%" >
@@ -47,8 +57,10 @@ export class Root extends React.Component<{}, {
                     <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
                     <TabButton color="white" onClick={() => this.setState({ tab: "editor" })} disabled={this.state.tab === 'editor'} active={true}><i className="material-icons">photo</i></TabButton>
                 </RootSidebar>
-                {this.state.tab === 'builder' && <BuilderStyled />}
-                {this.state.tab === 'editor' && <SceneEditor />}
+                <Scenes.Provider value={this.state.scenes}>
+                    {this.state.tab === 'builder' && <BuilderStyled />}
+                </Scenes.Provider>
+                {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} />}
             </Horizontal>
         );
     }

@@ -2,6 +2,8 @@ import * as React from 'react';
 import Glamorous from 'glamorous';
 import { Vertical, Polygon, Animation, animation, polygonsToSvg, Button } from './editor';
 import { getUid } from './utils/id';
+import { Scenes } from './app';
+import { placeholder } from '../../node_modules/glamor';
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
     backgroundImage: props.grid ? 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)' : undefined,
@@ -19,7 +21,7 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
     ':hover': {
         opacity: 0.7
     }
-  }));
+}));
 
 
 const polygonItem = {
@@ -112,5 +114,26 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
                 {this.props.create && <Button onClick={this.new}><i className="material-icons">add</i></Button>}
             </Vertical>
         );
+    }
+}
+
+export class Scene extends React.PureComponent<{ id: string, onClick: () => void, blur?: boolean, animated?: boolean, placeholderText?: string }> {
+    render() {
+        return (
+            <Scenes.Consumer>
+                {scenes =>
+                    scenes[this.props.id] ?
+                        <StyledScene
+                            onClick={() => this.props.onClick()}
+                            blur={this.props.blur}
+                            grid={false}
+                            animation={this.props.animated ? animation(scenes[this.props.id].animations, scenes[this.props.id].polygons) : undefined}
+                        >
+                            {polygonsToSvg(scenes[this.props.id].polygons)}
+                        </StyledScene> : <Button onClick={this.props.onClick}>{this.props.placeholderText || 'No Scene'}</Button>
+                }
+            </Scenes.Consumer>
+
+        )
     }
 }
