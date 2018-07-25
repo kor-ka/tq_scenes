@@ -1012,8 +1012,8 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
           <input style={{ opacity: 0, width: 1 }} type="file" id="file" onChange={this.import} />
           <Button onClick={this.undo} disabled={this.stateStack.length === 0 || this.undoPointer === 0}><i className="material-icons">undo</i></Button>
           <Button onClick={this.redo} disabled={this.undoPointer === this.stateStack.length - 1}><i className="material-icons">redo</i></Button>
-          {/* <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">folder_open</label></Button> */}
           <Button onClick={() => this.setState({ tab: "picker" })} disabled={this.state.tab === 'picker'} active={true}><i className="material-icons">folder_open</i></Button>
+          <Button ><label style={{ cursor: 'pointer' }} htmlFor="file" className="material-icons">publish</label></Button>
           <Button onClick={this.export} ><i className="material-icons">save_alt</i></Button>
         </Vertical>
         {(this.state.tab === 'polygons' || this.state.tab === 'animations') && (

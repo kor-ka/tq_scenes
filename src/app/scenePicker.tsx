@@ -18,10 +18,19 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
     borderRadius: 5,
     overflow: 'hidden',
     height: 100,
+    width: 100,
     cursor: 'pointer',
     ':hover': {
         opacity: 0.7
     }
+}));
+
+const RawScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
+    display: 'flex',
+    transform: props.blur ? 'scale(1.2) translate3d(0, 0, 0) translateZ(0)' : 'translate3d(0, 0, 0) translateZ(0)',
+    filter: props.blur ? 'blur(25px)' : undefined,
+    ...(props.animation || {}),
+    overflow: 'hidden',
 }));
 
 
@@ -118,20 +127,36 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
     }
 }
 
-export class Scene extends React.PureComponent<{ id: string, onClick: () => void, blur?: boolean, animated?: boolean, placeholderText?: string }> {
+export class Scene extends React.PureComponent<{ id: string, onClick?: () => void, blur?: boolean, animated?: boolean, fill?: boolean, placeholderText?: string, raw?: boolean }> {
     render() {
         return (
             <Scenes.Consumer>
                 {scenes =>
                     scenes[this.props.id] ?
-                        <StyledScene
-                            onClick={() => this.props.onClick()}
-                            blur={this.props.blur}
-                            grid={false}
-                            animation={this.props.animated ? animation(scenes[this.props.id].animations, scenes[this.props.id].polygons) : undefined}
-                        >
-                            {polygonsToSvg(scenes[this.props.id].polygons)}
-                        </StyledScene> : <Button onClick={this.props.onClick}>{this.props.placeholderText || 'No Scene'}</Button>
+                        <>
+                            {!this.props.raw && (
+                                <StyledScene
+                                    onClick={() => this.props.onClick()}
+                                    blur={this.props.blur}
+                                    grid={false}
+                                    animation={this.props.animated ? animation(scenes[this.props.id].animations, scenes[this.props.id].polygons) : undefined}
+                                >
+                                    {polygonsToSvg(scenes[this.props.id].polygons, this.props.fill)}
+                                </StyledScene>
+                            )}
+                            {this.props.raw && (
+                                <RawScene
+                                    onClick={() => this.props.onClick()}
+                                    blur={this.props.blur}
+                                    grid={false}
+                                    animation={this.props.animated ? animation(scenes[this.props.id].animations, scenes[this.props.id].polygons) : undefined}
+                                >
+                                    {polygonsToSvg(scenes[this.props.id].polygons, this.props.fill)}
+                                </RawScene>
+                            )}
+
+                        </>
+                        : <Button onClick={this.props.onClick}>{this.props.placeholderText || 'No Scene'}</Button>
                 }
             </Scenes.Consumer>
 

@@ -3,6 +3,7 @@ import Glamorous from 'glamorous';
 import { Vertical, Input, Horizontal, Button, TextArea, Select } from './editor';
 import { getUid } from './utils/id';
 import { Scene, ScenePicker } from './scenePicker';
+import { relative } from 'path';
 
 interface StoryState {
     story: Content[];
@@ -143,12 +144,20 @@ class Chapter {
 
 const episodeBorder = 1;
 const EpisodeDiv = Glamorous(Vertical)<{ selected: boolean }>((props) => ({
-    border: `${episodeBorder}px solid ${props.selected ? 'black' : 'gray'}`,
+    border: `${props.selected ? 2 : episodeBorder}px solid ${props.selected ? 'black' : 'gray'}`,
     borderRadius: 5,
     backgroundColor: 'white',
     width: '100%',
-    height: '100%'
+    height: '100%',
+    position: 'relative',
+    overflow: 'hidden',
 }));
+
+const SceneBackground = Glamorous(Scene)({
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+});
 
 const MapsProvider = React.createContext<{ eMap: { [id: string]: Episode }, cMap: { [id: string]: Chapter } }>({ eMap: {}, cMap: {} });
 
@@ -166,7 +175,10 @@ class EpisodeComponent extends React.Component<{ episodeId: string, selected: bo
         return (
             <MapsProvider.Consumer>
                 {data =>
+
                     <EpisodeDiv onClick={this.props.onClick} draggable={true} selected={this.props.selected} onDragStart={this.onDragStart} innerRef={this.onEpisodeCreated} className={(this.props as any).className}>
+                        <SceneBackground id={data.eMap[this.props.episodeId].sceneId} raw={true} fill={true} blur={false} />
+
                         {data.eMap[this.props.episodeId].name}
                     </EpisodeDiv>
                 }
@@ -426,7 +438,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     {
                         position: 'fixed',
                         top: 'calc(50% - 50px)',
-                        left: 'calc(100% - 100px)',
+                        left: 'calc(70% - 100px)',
                     }}><i className="material-icons">add</i></Button>
             </div>
 
@@ -436,6 +448,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 
 const ChapterMap = Glamorous(ChapterComponent)({
     height: 'calc(50% - 50px)',
+    flexBasis: '70%',
     overflow: 'scroll'
 });
 
@@ -517,20 +530,33 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
 
 const TextContentStyled = Glamorous.div({
     whiteSpace: 'pre-wrap',
-    border: '1px solid gray',
+    // border: '1px solid gray',
+    color: 'rgba(0, 0, 0, 0.8)',
+    fontSize: '16px',
+    backgroundColor: 'rgba(250, 250, 250, 0.4)',
     padding: 10,
     borderRadius: 10
 });
-class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, onClick: (content: C) => void }>{
+
+const ActionTextContentStyled = Glamorous.div({
+    whiteSpace: 'pre-wrap',
+    border: '2px solid white',
+    color: 'rgba(0, 0, 0, 0.8)',
+    fontSize: '16px',
+    backgroundColor: 'rgba(250, 250, 250, 0.4)',
+    padding: 10,
+    borderRadius: 10
+});
+class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, onClick?: (content: C) => void }>{
     render() {
         let content: any = <TextContentStyled><strong>Not supported yet</strong></TextContentStyled>;
         if (this.props.content.type === 'text') {
             content = <TextContentStyled>{(this.props.content as Partial<TextContent>).text}</TextContentStyled>;
         } else if (this.props.content.type === 'closed_text') {
-            content = <TextContentStyled>{(this.props.content as Partial<ReactionClosedText>).title}</TextContentStyled>;
+            content = <ActionTextContentStyled>{(this.props.content as Partial<ReactionClosedText>).title}</ActionTextContentStyled>;
         }
         return (
-            React.cloneElement(content, { onClick: () => this.props.onClick(this.props.content) })
+            React.cloneElement(content, { onClick: () => this.props.onClick(this.props.content), className: (this.props as any).className })
         );
     }
 }
@@ -654,11 +680,34 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
                 {this.state.selectedElement !== 'scene' && (
                     <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
                 )}
-                 {this.state.selectedElement === 'scene' && (
-                     <ScenePicker onclick={this.setScene}/>
+                {this.state.selectedElement === 'scene' && (
+                    <ScenePicker onclick={this.setScene} />
                 )}
             </Horizontal>
         );
+    }
+}
+
+const ContentRenderMargin = Glamorous(ContentRender)({
+    margin: 8,
+});
+
+class EpisodePreview extends React.Component<{ episode: Episode }>{
+    render() {
+        return (
+            <div style={{ position: 'relative', flexBasis: '30%', height: '50%', overflow: 'hidden' }} >
+                <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} />
+                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 20 }}>
+                    <Vertical style={{ flexGrow: 1 }}>
+                        {this.props.episode.contentReasolvers.map(c => <ContentRender content={c.content} />)}
+                    </Vertical>
+                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, marginTop: 24 }} >
+                        {this.props.episode.reactionReasolvers.map(c => <ContentRenderMargin content={c.reaction} />)}
+                    </div>
+
+                </Vertical>
+            </div>
+        )
     }
 }
 
@@ -819,7 +868,10 @@ export class Builder extends React.Component<{}, BuilderState>{
                         {this.state.timeLine.map((cId: string, i: number) => <ChapterListItem key={cId} item={this.state.chapterMap[cId]} index={i} onClick={() => this.setState({ selectedChapter: cId })} selected={cId === this.state.selectedChapter} move={this.moveChapter} />)}
                         <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
                     </ChapterList>
-                    <ChapterMap eMap={this.state.episodesMap} selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
+                    <Horizontal>
+                        <ChapterMap eMap={this.state.episodesMap} selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
+                        <EpisodePreview episode={this.state.episodesMap[this.state.selectedepisode]} />
+                    </Horizontal>
                     <BottomConstainer>
                         <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode]} onChange={this.updateEpisode} />
                     </BottomConstainer>
