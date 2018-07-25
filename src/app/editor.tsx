@@ -864,7 +864,7 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
     super(props);
 
     //recover editor state
-    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
+    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {selectedScene: 'scene_' + getUid()};
 
     //initial scenes state
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};

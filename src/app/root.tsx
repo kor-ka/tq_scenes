@@ -38,6 +38,7 @@ export class Root extends React.Component<{}, {
         let savedState = JSON.parse(window.localStorage.getItem('rootState'));
 
         //initial scenes state
+        // TODO load initial scenes if none
         let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
 
         this.state = { tab: 'builder', ...(savedState || {}), scenes: scenes };
