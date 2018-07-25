@@ -6,6 +6,7 @@ import { Scenes } from './app';
 import { placeholder } from '../../node_modules/glamor';
 
 const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
+    flexShrink: 0,
     backgroundImage: props.grid ? 'url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/grid.png)' : undefined,
     backgroundSize: '16px 16px',
     display: 'flex',
@@ -50,7 +51,7 @@ const glow = {
     },
     {
         timing: 50,
-        opacity: 1,
+        opacity: 100,
     },
     {
         timing: 100,
@@ -101,7 +102,7 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
 
     render() {
         return (
-            <Vertical padding="20px" style={{ zIndex: 1, background: 'white' }}>
+            <Vertical padding="20px" style={{ zIndex: 1, background: 'white' }} scrollable={true}>
                 {Object.keys(this.state.scenes).map(sKey =>
                     <StyledScene
                         onClick={() => this.props.onclick(sKey)}

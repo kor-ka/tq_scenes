@@ -37,8 +37,10 @@ export class Root extends React.Component<{}, {
         super(props);
         let savedState = JSON.parse(window.localStorage.getItem('rootState'));
 
-        // TODO save/load here
-        this.state = { tab: 'builder', ...(savedState || {}), scenes: {} };
+        //initial scenes state
+        let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+
+        this.state = { tab: 'builder', ...(savedState || {}), scenes: scenes };
     }
     componentDidUpdate() {
         window.localStorage.setItem('rootState', JSON.stringify(this.state));

@@ -866,14 +866,13 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
     //recover editor state
     let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
 
-    //recover scene state
-    let scenes = JSON.parse(window.localStorage.getItem('scenes'));
+    //initial scenes state
+    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
 
     let polygons = [polygonItem, polygonItem2];
     let animations = [glow, move];
     let selectedScene = scenes[editorState.selectedScene];
     if (selectedScene) {
-      console.warn(selectedScene);
       polygons = selectedScene.polygons || polygons;
       animations = selectedScene.animations || animations;
     }
