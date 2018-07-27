@@ -57,7 +57,7 @@ class ConditionEquals extends Condition {
     }
 }
 
-type ActionType = 'setVar' | 'increment' | 'decriment';
+type ActionType = 'set' | 'increment' | 'decriment';
 
 class Action {
     type: ActionType;
@@ -71,7 +71,7 @@ class Action {
 class SetVarAction extends Action {
     type: ActionType;
     constructor(condition?: Condition) {
-        super('setVar', condition)
+        super('set', condition)
     }
 }
 
@@ -157,6 +157,7 @@ const SceneBackground = Glamorous(Scene)({
     position: 'absolute',
     width: '100%',
     height: '100%',
+    cursor: 'pointer',
 });
 
 const MapsProvider = React.createContext<{ eMap: { [id: string]: Episode }, cMap: { [id: string]: Chapter } }>({ eMap: {}, cMap: {} });
@@ -528,26 +529,29 @@ class ChapterListItem extends React.Component<{ item: Chapter, index: number, se
     }
 }
 
-const TextContentStyled = Glamorous.div({
+const TextContentStyled = Glamorous.div<{ selected?: boolean }>(props => ({
     whiteSpace: 'pre-wrap',
-    // border: '1px solid gray',
+    border: props.selected ? '1px solid #3E5C6B' : undefined,
     color: 'rgba(0, 0, 0, 0.8)',
     fontSize: '16px',
     backgroundColor: 'rgba(250, 250, 250, 0.4)',
     padding: 10,
-    borderRadius: 10
-});
+    borderRadius: 10,
+    cursor: 'pointer'
+}));
 
-const ActionTextContentStyled = Glamorous.div({
+const ActionTextContentStyled = Glamorous.div<{ selected?: boolean }>(props => ({
     whiteSpace: 'pre-wrap',
-    border: '2px solid white',
+    border: props.selected ? '1px solid #3E5C6B' : '1px solid rgba(250, 250, 250, 0.6)',
     color: 'rgba(0, 0, 0, 0.8)',
     fontSize: '16px',
     backgroundColor: 'rgba(250, 250, 250, 0.4)',
     padding: 10,
-    borderRadius: 10
-});
-class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, onClick?: (content: C) => void }>{
+    borderRadius: 10,
+    cursor: 'pointer'
+
+}));
+class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, selected?: boolean, onClick?: (content: C) => void }>{
     render() {
         let content: any = <TextContentStyled><strong>Not supported yet</strong></TextContentStyled>;
         if (this.props.content.type === 'text') {
@@ -556,7 +560,7 @@ class ContentRender<C extends Content | Reaction> extends React.Component<{ cont
             content = <ActionTextContentStyled>{(this.props.content as Partial<ReactionClosedText>).title}</ActionTextContentStyled>;
         }
         return (
-            React.cloneElement(content, { onClick: () => this.props.onClick(this.props.content), className: (this.props as any).className })
+            React.cloneElement(content, { onClick: () => this.props.onClick(this.props.content), className: (this.props as any).className, selected: this.props.selected })
         );
     }
 }
@@ -564,7 +568,7 @@ class ContentRender<C extends Content | Reaction> extends React.Component<{ cont
 class TextContenSettings extends React.Component<{ content: TextContent, onChange: (content: TextContent) => void }>{
     render() {
         return (
-            <TextArea value={this.props.content.text} onChange={(v: any) => this.props.onChange({ ...this.props.content, text: v.target.value })} />
+            <TextArea style={{ height: '100%' }} value={this.props.content.text} onChange={(v: any) => this.props.onChange({ ...this.props.content, text: v.target.value })} />
         );
     }
 }
@@ -575,20 +579,35 @@ class ReactionClosedTextettings extends React.Component<{ content: ReactionClose
         return (
             <>
                 <Input value={this.props.content.title} onChange={(v: any) => this.props.onChange({ ...this.props.content, title: v.target.value })} />
-                <Select key={this.props.content.id} onChange={(v: any) => {
-                    this.props.onChange({ ...this.props.content, nextEpisode: v.target.value ? v.target.value : undefined })
-                }} value={this.props.content.nextEpisode}>
-                    <option key="none" value="">no connection</option>
-                    <MapsProvider.Consumer>
-                        {maps => Object.keys(maps.eMap).map(eKey => <option key={eKey} value={maps.eMap[eKey].id} >{maps.eMap[eKey].name}</option>)}
-                    </MapsProvider.Consumer>
-                </Select>
+                <Horizontal alignItems="center" >
+                    Next episode:
+                    <Select style={{ marginLeft: 8 }} key={this.props.content.id} onChange={(v: any) => {
+                        this.props.onChange({ ...this.props.content, nextEpisode: v.target.value ? v.target.value : undefined })
+                    }} value={this.props.content.nextEpisode}>
+                        <option key="none" value="">no connection</option>
+                        <MapsProvider.Consumer>
+                            {maps => Object.keys(maps.eMap).map(eKey => <option key={eKey} value={maps.eMap[eKey].id} >{maps.eMap[eKey].name}</option>)}
+                        </MapsProvider.Consumer>
+                    </Select>
+                </Horizontal>
+
             </>
         );
     }
 }
 
-class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, onChange: (content: C) => void }>{
+// class ConditionRender extends React.Component<{ conditon: Condition }>{
+//     render() {
+//         let content = 'Not yet supported';
+//         let type = this.props.conditon.type;
+//         if (type === 'equals') {
+//             <>
+//         }
+//         return content;
+//     }
+// }
+
+class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, condition?: Condition, onChange: (content: C) => void }>{
     render() {
         if (!this.props.content) {
             return <Vertical flex={1} />;
@@ -601,8 +620,6 @@ class ContenSettings<C extends Content | Reaction> extends React.Component<{ con
         }
         return (
             <Vertical flex={1} scrollable={true} padding="16px">
-                {/* todo: dev tool, delete */}
-                {this.props.content.id}
                 {content}
                 <Button style={{ alignSelf: 'flex-end' }} color="red"><i className="material-icons">delete</i></Button>
             </Vertical>
@@ -658,31 +675,33 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
 
     render() {
         console.warn(this.props.episode.sceneId);
-        let elementContainer: { content?: Content, reaction?: Reaction } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
+        let elementContainer: { content?: Content, reaction?: Reaction, condition?: Condition } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
             <Horizontal width="100%">
-                <Vertical flex={1} padding="16px" scrollable={true} alignItems="flex-start">
+                <Vertical style={{ borderRight: '1px solid #3E5C6B' }} flex={1} padding="16px" scrollable={true} alignItems="flex-start">
 
 
                     <Input value={this.props.episode.name} onChange={this.rename} />
                     <Scene id={this.props.episode.sceneId} onClick={() => this.setState({ selectedElement: 'scene' })} />
                     {this.props.episode.contentReasolvers.map(c =>
-                        <ContentRender key={c.content.id} content={c.content} onClick={this.selectElement} />
+                        <ContentRender selected={this.state.selectedElement === c.content.id} key={c.content.id} content={c.content} onClick={this.selectElement} />
                     )}
                     <Button onClick={this.addContent} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">edit</i></Button>
 
                     {this.props.episode.reactionReasolvers.map(c =>
-                        <ContentRender key={c.reaction.id} content={c.reaction} onClick={this.selectElement} />
+                        <ContentRender selected={this.state.selectedElement === c.reaction.id} key={c.reaction.id} content={c.reaction} onClick={this.selectElement} />
                     )}
                     <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
 
                 </Vertical>
-                {this.state.selectedElement !== 'scene' && (
-                    <ContenSettings content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
-                )}
-                {this.state.selectedElement === 'scene' && (
-                    <ScenePicker onclick={this.setScene} />
-                )}
+                <Vertical scrollable={true} style={{ flex: 1 }}>
+                    {this.state.selectedElement !== 'scene' && (
+                        <ContenSettings condition={elementContainer.condition} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
+                    )}
+                    {this.state.selectedElement === 'scene' && (
+                        <ScenePicker onclick={this.setScene} />
+                    )}
+                </Vertical>
             </Horizontal>
         );
     }
@@ -695,13 +714,13 @@ const ContentRenderMargin = Glamorous(ContentRender)({
 class EpisodePreview extends React.Component<{ episode: Episode }>{
     render() {
         return (
-            <div style={{ position: 'relative', flexBasis: '30%', height: '50%', overflow: 'hidden' }} >
+            <div style={{ position: 'relative', flexBasis: '30%', height: 'calc(50%)', overflow: 'hidden' }} >
                 <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} />
-                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 20 }}>
-                    <Vertical style={{ flexGrow: 1 }}>
+                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden' }} scrollable={true}>
+                    <Vertical style={{ flexGrow: 1, padding: 16, paddingBottom: 0, alignItems: 'flex-start' }}>
                         {this.props.episode.contentReasolvers.map(c => <ContentRender content={c.content} />)}
                     </Vertical>
-                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, marginTop: 24 }} >
+                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0 }} >
                         {this.props.episode.reactionReasolvers.map(c => <ContentRenderMargin content={c.reaction} />)}
                     </div>
 
@@ -734,7 +753,8 @@ interface BuilderState {
 
 const BottomConstainer = Glamorous(Horizontal)({
     height: 'calc(50% - 50px)',
-    width: '100%'
+    width: '100%',
+    borderTop: '1px solid #3E5C6B'
 });
 
 export class Builder extends React.Component<{}, BuilderState>{

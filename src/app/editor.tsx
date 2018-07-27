@@ -794,6 +794,7 @@ export const polygonsToSvg = (polygons: Polygon[], fill?: boolean, border?: bool
       let newPath = selectedPolygonPonts.map((p, i) => p + (i % 2 === 0 ? newCenter.x - oldCenter.x : newCenter.y - oldCenter.y));
       dragCallback(selected, newPath, final);
     })} {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}>
+
       {polygonsReversed.map(polygon =>
         <polygon cursor={polygon.id === selected ? 'move' : 'default'} className={polygon.id === selected ? 'draggable' : undefined} key={polygon.id} id={polygon.id} fill={polygon.fill} opacity={polygon.opacity} points={polygon.points.join(" ")} onClick={ref => onSelect ? onSelect((ref.target as any).id) : undefined} />
       )}
@@ -864,7 +865,7 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
     super(props);
 
     //recover editor state
-    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {selectedScene: 'scene_' + getUid()};
+    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || { selectedScene: 'scene_' + getUid() };
 
     //initial scenes state
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
@@ -893,7 +894,7 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
   }
 
   componentWillUpdate(nextPros: {}, nexState: EditorState) {
-    if(nexState.selectedScene !== this.state.selectedScene){
+    if (nexState.selectedScene !== this.state.selectedScene) {
       return;
     }
     let scrollToSelected = nexState.selectedP != this.state.selectedP && nexState.selectPSource === 'scene';

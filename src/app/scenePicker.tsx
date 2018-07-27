@@ -28,7 +28,7 @@ const StyledScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolea
 const RawScene = Glamorous.div<{ blur: boolean, animation?: any, grid: boolean }>((props) => ({
     display: 'flex',
     transform: props.blur ? 'scale(1.2) translate3d(0, 0, 0) translateZ(0)' : 'translate3d(0, 0, 0) translateZ(0)',
-    filter: props.blur ? 'blur(25px)' : undefined,
+    filter: props.blur ? 'blur(16px)' : undefined,
     ...(props.animation || {}),
     overflow: 'hidden',
 }));
