@@ -43,7 +43,7 @@ class ImageContent extends Content {
 
 type ConditionType = 'equals' | 'greater' | 'less' | 'and' | 'or';
 
-class Condition {
+abstract class Condition {
     type: ConditionType;
     constructor(type: ConditionType) {
         this.type = type;
@@ -51,9 +51,32 @@ class Condition {
 }
 
 class ConditionEquals extends Condition {
-    type: ConditionType;
-    constructor() {
+    target: string;
+    ethalon: string;
+    constructor(target: string, ethalon: string) {
         super('equals')
+        this.target = target;
+        this.ethalon = ethalon;
+    }
+}
+
+class ConditionGreather extends Condition {
+    target: string;
+    ethalon: string;
+    constructor(target: string, ethalon: string) {
+        super('greater')
+        this.target = target;
+        this.ethalon = ethalon;
+    }
+}
+
+class ConditionLess extends Condition {
+    target: string;
+    ethalon: string;
+    constructor(target: string, ethalon: string) {
+        super('less')
+        this.target = target;
+        this.ethalon = ethalon;
     }
 }
 
@@ -596,18 +619,50 @@ class ReactionClosedTextettings extends React.Component<{ content: ReactionClose
     }
 }
 
-// class ConditionRender extends React.Component<{ conditon: Condition }>{
-//     render() {
-//         let content = 'Not yet supported';
-//         let type = this.props.conditon.type;
-//         if (type === 'equals') {
-//             <>
-//         }
-//         return content;
-//     }
-// }
+class ConditionRender extends React.Component<{ conditon: Condition, onChange: (condition: any) => void }>{
 
-class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, condition?: Condition, onChange: (content: C) => void }>{
+    onTargetChange = (target: any) => {
+        this.props.onChange({ ...this.props.conditon, target: target.target.value })
+    }
+
+    onEthalonChange = (target: any) => {
+        this.props.onChange({ ...this.props.conditon, ethalon: target.target.value })
+    }
+
+    onCompareTypeChange = (target: any) => {
+        this.props.onChange({ ...this.props.conditon, type: target.target.value })
+    }
+
+    render() {
+        let content: any = 'Not yet supported';
+        let type = this.props.conditon.type;
+        if (type === 'equals' || type === 'greater' || type === 'less') {
+            content = (
+                <Horizontal alignItems="center"> 
+                    will show if 
+                    <Input style={{marginLeft: 8}} value={(this.props.conditon as any).target} onChange={this.onTargetChange} />
+                    <Select value={type} onChange={this.onCompareTypeChange}>
+                        <option value="equals">{'='}</option>
+                        <option value="greater">{'>'}</option>
+                        <option value="less">{'<'}</option>
+                    </Select>
+                    <Input value={(this.props.conditon as any).ethalon} onChange={this.onEthalonChange} />
+                </Horizontal>
+            );
+        }
+        return content;
+    }
+}
+
+class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, condition?: Condition, onChange: (content: C) => void, onCondtionChange: (content: Condition) => void }>{
+    onConditionChange = (condition: Condition) => {
+        this.props.onCondtionChange(condition);
+    }
+
+    onConditionDelete = () => {
+        this.props.onCondtionChange(undefined);
+    }
+
     render() {
         if (!this.props.content) {
             return <Vertical flex={1} />;
@@ -620,6 +675,16 @@ class ContenSettings<C extends Content | Reaction> extends React.Component<{ con
         }
         return (
             <Vertical flex={1} scrollable={true} padding="16px">
+                {this.props.condition && (
+                    <Horizontal>
+                        <div style={{ flexGrow: 1 }}>
+                            <ConditionRender conditon={this.props.condition} onChange={this.onConditionChange} />
+                        </div>
+                        <Button color="red" onClick={this.onConditionDelete}><i className="material-icons">delete</i></Button>
+
+                    </Horizontal>
+                )}
+                {!this.props.condition && <Button onClick={() => this.onConditionChange(new ConditionEquals('', ''))}>always shown</Button>}
                 {content}
                 <Button style={{ alignSelf: 'flex-end' }} color="red"><i className="material-icons">delete</i></Button>
             </Vertical>
@@ -665,6 +730,15 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
         this.props.onChange(res);
     }
 
+    onConditionChange = (target: string, condition: Condition) => {
+        let res = { ...this.props.episode };
+
+        res.contentReasolvers = res.contentReasolvers.map(c => c.content.id === target ? { ...c, condition: condition } : c);
+        res.reactionReasolvers = res.reactionReasolvers.map(c => c.reaction.id === target ? { ...c, condition: condition } : c);
+        console.warn(target);
+        this.props.onChange(res);
+    }
+
     addContent = () => {
         this.props.onChange({ ...this.props.episode, contentReasolvers: [...this.props.episode.contentReasolvers, { content: new TextContent("Some text") }] })
     }
@@ -674,7 +748,6 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
     }
 
     render() {
-        console.warn(this.props.episode.sceneId);
         let elementContainer: { content?: Content, reaction?: Reaction, condition?: Condition } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
             <Horizontal width="100%">
@@ -696,7 +769,7 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
                 </Vertical>
                 <Vertical scrollable={true} style={{ flex: 1 }}>
                     {this.state.selectedElement !== 'scene' && (
-                        <ContenSettings condition={elementContainer.condition} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} />
+                        <ContenSettings condition={elementContainer.condition} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} onCondtionChange={c => this.onConditionChange(((elementContainer.content || elementContainer.reaction) as any).id, c)} />
                     )}
                     {this.state.selectedElement === 'scene' && (
                         <ScenePicker onclick={this.setScene} />
