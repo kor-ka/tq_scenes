@@ -84,31 +84,12 @@ type ActionType = 'set' | 'increment' | 'decriment';
 
 class Action {
     type: ActionType;
-    condition?: Condition;
-    constructor(type: ActionType, condition?: Condition) {
+    target: string;
+     value: string;
+    constructor(type: ActionType, target: string, value: string) {
         this.type = type;
-        this.condition = condition;
-    }
-}
-
-class SetVarAction extends Action {
-    type: ActionType;
-    constructor(condition?: Condition) {
-        super('set', condition)
-    }
-}
-
-class IncrementAction extends Action {
-    type: ActionType;
-    constructor(condition?: Condition) {
-        super('increment', condition)
-    }
-}
-
-class DecrimentAction extends Action {
-    type: ActionType;
-    constructor(condition?: Condition) {
-        super('decriment', condition)
+        this.target = target;
+        this.value = value;
     }
 }
 
@@ -638,15 +619,50 @@ class ConditionRender extends React.Component<{ conditon: Condition, onChange: (
         let type = this.props.conditon.type;
         if (type === 'equals' || type === 'greater' || type === 'less') {
             content = (
-                <Horizontal alignItems="center"> 
-                    will show if 
-                    <Input style={{marginLeft: 8}} value={(this.props.conditon as any).target} onChange={this.onTargetChange} />
+                <Horizontal alignItems="center">
+                    will show if
+                    <Input style={{ marginLeft: 8 }} value={(this.props.conditon as any).target} onChange={this.onTargetChange} />
                     <Select value={type} onChange={this.onCompareTypeChange}>
                         <option value="equals">{'='}</option>
                         <option value="greater">{'>'}</option>
                         <option value="less">{'<'}</option>
                     </Select>
                     <Input value={(this.props.conditon as any).ethalon} onChange={this.onEthalonChange} />
+                </Horizontal>
+            );
+        }
+        return content;
+    }
+}
+
+class ActionRender extends React.Component<{ action: Action, onChange: (action: Action) => void }>{
+
+    onTargetChange = (target: any) => {
+        this.props.onChange({ ...this.props.action, target: target.target.value })
+    }
+
+    onValueChange = (target: any) => {
+        this.props.onChange({ ...this.props.action, value: target.target.value })
+    }
+
+    onCompareTypeChange = (target: any) => {
+        this.props.onChange({ ...this.props.action, type: target.target.value })
+    }
+
+    render() {
+        let content: any = 'Not yet supported';
+        let type = this.props.action.type;
+        if (type === 'set' || type === 'increment' || type === 'decriment') {
+            content = (
+                <Horizontal alignItems="center">
+                    set {this.props.action.target}
+                    <Input style={{ marginLeft: 8 }} value={this.props.action.target} onChange={this.onTargetChange} />
+                    <Select value={type} onChange={this.onCompareTypeChange}>
+                        <option value="set">{'='}</option>
+                        <option value="increment">{'+'}</option>
+                        <option value="decriment">{'-'}</option>
+                    </Select>
+                    <Input value={this.props.action.value} onChange={this.onValueChange} />
                 </Horizontal>
             );
         }
