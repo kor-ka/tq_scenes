@@ -78,7 +78,7 @@ export class Root extends React.Component<{}, {
                 <RootSidebar padding="16px">
                     <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
                     <TabButton color="white" onClick={() => this.setState({ tab: "editor" })} disabled={this.state.tab === 'editor'} active={true}><i className="material-icons">photo</i></TabButton>
-                    <TabButton color="white" onClick={() => this.setState({ tab: "player" })} disabled={this.state.tab === 'player'} active={true}><i className="material-icons">play_arrow</i></TabButton>
+                    {this.state.episodes && <TabButton color="white" onClick={() => this.setState({ tab: "player" })} disabled={this.state.tab === 'player'} active={true}><i className="material-icons">play_arrow</i></TabButton>}
                 </RootSidebar>
                 <Scenes.Provider value={this.state.scenes}>
                     {this.state.tab === 'builder' && <BuilderStyled onChanged={this.episodesUpdated} />}
