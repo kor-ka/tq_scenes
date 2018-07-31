@@ -14,7 +14,7 @@ interface StoryState {
 
 type ContentType = 'text' | 'image';
 
-class Content {
+export class Content {
     id: string;
     type: ContentType;
     name?: string;
@@ -43,14 +43,14 @@ class ImageContent extends Content {
 
 type ConditionType = 'equals' | 'greater' | 'less' | 'and' | 'or';
 
-abstract class Condition {
+export abstract class Condition {
     type: ConditionType;
     constructor(type: ConditionType) {
         this.type = type;
     }
 }
 
-class ConditionEquals extends Condition {
+export class ConditionEquals extends Condition {
     target: string;
     ethalon: string;
     constructor(target: string, ethalon: string) {
@@ -60,7 +60,7 @@ class ConditionEquals extends Condition {
     }
 }
 
-class ConditionGreather extends Condition {
+export class ConditionGreather extends Condition {
     target: string;
     ethalon: string;
     constructor(target: string, ethalon: string) {
@@ -70,7 +70,7 @@ class ConditionGreather extends Condition {
     }
 }
 
-class ConditionLess extends Condition {
+export class ConditionLess extends Condition {
     target: string;
     ethalon: string;
     constructor(target: string, ethalon: string) {
@@ -82,19 +82,21 @@ class ConditionLess extends Condition {
 
 type ActionType = 'set' | 'increment' | 'decriment';
 
-class Action {
+export class Action {
     type: ActionType;
     target: string;
-     value: string;
+    value: string;
+    id: string;
     constructor(type: ActionType, target: string, value: string) {
         this.type = type;
         this.target = target;
         this.value = value;
+        this.id = 'action_' + getUid();
     }
 }
 
 type ReactionType = 'closed_text' | 'open_text' | 'pipe';
-class Reaction {
+export class Reaction {
     id: string;
     type: ReactionType;
     nextEpisode?: string;
@@ -121,7 +123,7 @@ class ReactionPipe extends Reaction {
     }
 }
 
-class Episode {
+export class Episode {
     id: string;
     name: string;
     contentReasolvers: { condition?: Condition, content: Content }[];
@@ -555,7 +557,7 @@ const ActionTextContentStyled = Glamorous.div<{ selected?: boolean }>(props => (
     cursor: 'pointer'
 
 }));
-class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, selected?: boolean, onClick?: (content: C) => void }>{
+export class ContentRender<C extends Content | Reaction> extends React.Component<{ content: C, selected?: boolean, onClick?: (content: C) => void }>{
     render() {
         let content: any = <TextContentStyled><strong>Not supported yet</strong></TextContentStyled>;
         if (this.props.content.type === 'text') {
@@ -655,7 +657,7 @@ class ActionRender extends React.Component<{ action: Action, onChange: (action: 
         if (type === 'set' || type === 'increment' || type === 'decriment') {
             content = (
                 <Horizontal alignItems="center">
-                    set {this.props.action.target}
+                    set
                     <Input style={{ marginLeft: 8 }} value={this.props.action.target} onChange={this.onTargetChange} />
                     <Select value={type} onChange={this.onCompareTypeChange}>
                         <option value="set">{'='}</option>
@@ -670,13 +672,27 @@ class ActionRender extends React.Component<{ action: Action, onChange: (action: 
     }
 }
 
-class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, condition?: Condition, onChange: (content: C) => void, onCondtionChange: (content: Condition) => void }>{
+class ContenSettings<C extends Content | Reaction> extends React.Component<{ content?: C, condition?: Condition, actions?: Action[] | null, onChange: (content: C) => void, onCondtionChange: (content: Condition) => void, onActionsChange: (target: string, actions: Action[]) => void }>{
     onConditionChange = (condition: Condition) => {
         this.props.onCondtionChange(condition);
     }
 
     onConditionDelete = () => {
         this.props.onCondtionChange(undefined);
+    }
+
+    onActionChange = (action: Action) => {
+        let res = (this.props.actions || []).map(a => a.id === action.id ? action : a);
+        this.props.onActionsChange(this.props.content.id, [...res]);
+    }
+
+    onActionCreate = () => {
+        this.props.onActionsChange(this.props.content.id, [...this.props.actions || [], new Action('set', '', '')]);
+    }
+
+    onActionDelete = (id: string) => {
+        let res = (this.props.actions || []).filter(a => a.id !== id);
+        this.props.onActionsChange(this.props.content.id, [...res]);
     }
 
     render() {
@@ -701,7 +717,19 @@ class ContenSettings<C extends Content | Reaction> extends React.Component<{ con
                     </Horizontal>
                 )}
                 {!this.props.condition && <Button onClick={() => this.onConditionChange(new ConditionEquals('', ''))}>always shown</Button>}
+
                 {content}
+
+                {(this.props.actions || []).map(
+                    a =>
+                        <Horizontal>
+                            <div style={{ flexGrow: 1 }}>
+                                <ActionRender onChange={this.onActionChange} action={a} />
+                            </div >
+                            <Button color="red" onClick={() => this.onActionDelete(a.id)}><i className="material-icons">delete</i></Button>
+                        </Horizontal>
+                )}
+                {this.props.actions !== null && <Button onClick={this.onActionCreate}>add action</Button>}
                 <Button style={{ alignSelf: 'flex-end' }} color="red"><i className="material-icons">delete</i></Button>
             </Vertical>
         );
@@ -755,6 +783,14 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
         this.props.onChange(res);
     }
 
+    onActionsChange = (target: string, actions: Action[]) => {
+        let res = { ...this.props.episode };
+
+        res.reactionReasolvers = res.reactionReasolvers.map(c => c.reaction.id === target ? { ...c, actions: actions } : c);
+        console.warn(target, res, actions);
+        this.props.onChange(res);
+    }
+
     addContent = () => {
         this.props.onChange({ ...this.props.episode, contentReasolvers: [...this.props.episode.contentReasolvers, { content: new TextContent("Some text") }] })
     }
@@ -764,7 +800,7 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
     }
 
     render() {
-        let elementContainer: { content?: Content, reaction?: Reaction, condition?: Condition } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
+        let elementContainer: { content?: Content, reaction?: Reaction, condition?: Condition, actions?: Action[] } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
             <Horizontal width="100%">
                 <Vertical style={{ borderRight: '1px solid #3E5C6B' }} flex={1} padding="16px" scrollable={true} alignItems="flex-start">
@@ -785,7 +821,7 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
                 </Vertical>
                 <Vertical scrollable={true} style={{ flex: 1 }}>
                     {this.state.selectedElement !== 'scene' && (
-                        <ContenSettings condition={elementContainer.condition} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} onCondtionChange={c => this.onConditionChange(((elementContainer.content || elementContainer.reaction) as any).id, c)} />
+                        <ContenSettings onActionsChange={this.onActionsChange} condition={elementContainer.condition} actions={elementContainer.reaction ? elementContainer.actions : null} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} onCondtionChange={c => this.onConditionChange(((elementContainer.content || elementContainer.reaction) as any).id, c)} />
                     )}
                     {this.state.selectedElement === 'scene' && (
                         <ScenePicker onclick={this.setScene} />
@@ -846,7 +882,7 @@ const BottomConstainer = Glamorous(Horizontal)({
     borderTop: '1px solid #3E5C6B'
 });
 
-export class Builder extends React.Component<{}, BuilderState>{
+export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap: { [key: string]: Episode }, root: string }) => void }, BuilderState>{
     constructor(props: any) {
         super(props);
         let root = new Episode();
@@ -881,6 +917,7 @@ export class Builder extends React.Component<{}, BuilderState>{
 
     componentDidUpdate() {
         window.localStorage.setItem('builderState', JSON.stringify(this.state));
+        this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
     }
 
     newEpisode = (targetChapter?: string) => {
@@ -968,6 +1005,7 @@ export class Builder extends React.Component<{}, BuilderState>{
     selectEpisode = (id: string) => {
         this.setState({ selectedepisode: id });
     }
+
 
     render() {
         return (

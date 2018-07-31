@@ -87,6 +87,9 @@ const move = {
     time: 5
 };
 
+export const newScene = (id: string) => {
+   return { id: id, polygons: [polygonItem, polygonItem2], animations: [glow, move] };
+}
 
 export class ScenePicker extends React.Component<{ create?: boolean, selected?: string, animated?: boolean, blur?: boolean, onclick?: (id: string) => void }, {
     scenes: { [id: string]: { id: string, polygons: Polygon[], animations: Animation[] } }
@@ -99,7 +102,7 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
 
     new = () => {
         let id = 'scene_' + getUid();
-        this.state.scenes[id] = { id: id, polygons: [polygonItem, polygonItem2], animations: [glow, move] };
+        this.state.scenes[id] = newScene(id);
         this.setState({
             scenes: this.state.scenes
         });

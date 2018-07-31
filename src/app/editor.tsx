@@ -865,10 +865,13 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
     super(props);
 
     //recover editor state
-    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || { selectedScene: 'scene_' + getUid() };
+    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
 
     //initial scenes state
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+    if (!editorState.selectedScene) {
+      editorState.selectedScene = Object.keys(scenes)[0];
+    }
 
     let polygons = [polygonItem, polygonItem2];
     let animations = [glow, move];
@@ -928,6 +931,7 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
     window.localStorage.setItem('editorState', JSON.stringify(editorState));
 
     let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
+    console.warn(scenes);
 
     scenes[selectedScene] = { id: selectedScene, polygons: polygons, animations: animations };
     this.props.onChanged(scenes);
