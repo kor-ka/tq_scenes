@@ -49,7 +49,8 @@ export class Root extends React.Component<{}, {
         let scenes = JSON.parse(window.localStorage.getItem('scenes'));
         if (!scenes) {
             scenes = {};
-            let id = 'scene_' + getUid();
+            // undefined key to male it default
+            let id = undefined;
             scenes[id] = newScene(id);
             window.localStorage.setItem('scenes', JSON.stringify(scenes));
         }

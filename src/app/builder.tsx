@@ -227,6 +227,7 @@ class ChapterState {
 
 const colors = ['#F55D3E', '#878E88', '#F7CB15', '#FFFFFF', '#76BED0',];
 const colors2 = ['#540D6E', '#EE4266', '#F7CB15', '#134074', '#1F271B',];
+const colors3 = ['#F55D3E', '#878E88', '#F7CB15', '#76BED0', '#540D6E', '#EE4266', '#F7CB15', '#134074', '#1F271B', '#EF3840', '#F17105', '#E6C229', '#177E89', '#7B1E7A', '#3772FF', '#E2EF70', '#E26D5A', '#AD343E', '#565264']
 const hashCode = (s) => {
     var h = 0, l = s.length, i = 0;
     if (l > 0)
@@ -310,7 +311,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                     let yt = (xt === rectTo.right || xt === rectTo.left || from.y === to.y) ? (rectTo.top + (rectTo.bottom - rectTo.top) / 2) : from.y > to.y ? rectTo.bottom : rectTo.top;
 
 
-                    let color = colors2[Math.abs(hashCode(reactionResolver.reaction.id + toEpisodeId)) % colors.length];
+                    let color = colors3[Math.abs(hashCode(reactionResolver.reaction.id + toEpisodeId)) % colors3.length];
 
                     lines.push(<marker key={'arrow_' + fromEpisode.id + '_' + toEpisodeId} id={'arrow_' + fromEpisode.id + '_' + toEpisodeId} markerWidth="3" markerHeight="2" refX="0" refY="0.5" orient={yt === rectTo.top ? '90' : yt === rectTo.bottom ? '270' : 'auto'} markerUnits="strokeWidth">
                         <path d="M0,0 L0,1 L1.5,0.5 z" fill={color} />
@@ -886,13 +887,39 @@ export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap:
     constructor(props: any) {
         super(props);
         let root = new Episode();
+        root.name = 'Root episode';
+        root.contentReasolvers[0] = { content: new TextContent('Story starts here') };
+
+        let e2 = new Episode();
+        e2.contentReasolvers[0] = { content: new TextContent('Next part of story') };
+        e2.name = 'next episode';
+
+        let e3 = new Episode();
+        e3.contentReasolvers[0] = { content: new TextContent('One more part') };
+        e3.name = 'one more episode';
+
+        let next = new ReactionClosedText('go to next episode');
+        next.nextEpisode = e2.id;
+        root.reactionReasolvers[0] = { reaction: next };
+
+        let next2 = new ReactionClosedText('go to next episode');
+        next2.nextEpisode = e3.id;
+        e2.reactionReasolvers[0] = { reaction: next2 };
+
+        let back = new ReactionClosedText('go to start');
+        back.nextEpisode = root.id;
+        e3.reactionReasolvers[0] = { reaction: back };
 
         let rootChapter = new Chapter();
         rootChapter.name = 'Chapter 1';
         rootChapter.map[root.id] = { episodeId: root.id, x: 0, y: 0 };
+        rootChapter.map[e2.id] = { episodeId: e2.id, x: 3, y: 0 };
+        rootChapter.map[e3.id] = { episodeId: e3.id, x: 0, y: 1 };
 
         let eMap = {};
         eMap[root.id] = root;
+        eMap[e2.id] = e2;
+        eMap[e3.id] = e3;
 
         let cMap = {};
         cMap[rootChapter.id] = rootChapter;
@@ -913,6 +940,8 @@ export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap:
             // ...defaultState
             ...builderState
         }
+
+        this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
     }
 
     componentDidUpdate() {
