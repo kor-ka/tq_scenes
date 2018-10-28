@@ -410,7 +410,7 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
 
         return (
 
-            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2 }} onDragOver={this.onDragOver} onDrop={this.onDrop} onDragLeave={this.onDragLeave} className={(this.props as any).className}>
+            <div style={{ overflowY: 'scroll', overflowX: 'scroll', position: 'relative', padding: gridGap / 2, flexBasis: '40%' }} onDragOver={this.onDragOver} onDrop={this.onDrop} onDragLeave={this.onDragLeave} className={(this.props as any).className}>
 
                 <div ref={this.onDragPlaceholderCreated} style={{
                     opacity: 0,
@@ -445,20 +445,14 @@ class ChapterComponent extends React.Component<ChapterComponentProps, ChapterSta
                 <Button onClick={this.newEpisode} style={
                     {
                         position: 'fixed',
-                        top: 'calc(50% - 50px)',
-                        left: 'calc(70% - 100px)',
+                        left: '40%',
+                        bottom: 50,
                     }}><i className="material-icons">add</i></Button>
             </div>
 
         );
     }
 }
-
-const ChapterMap = Glamorous(ChapterComponent)({
-    height: 'calc(50% - 50px)',
-    flexBasis: '70%',
-    overflow: 'scroll'
-});
 
 const ChapterListItemStyled = Glamorous.div<{ selected?: boolean, dragOver?: boolean }>(props => ({
     padding: 16,
@@ -623,14 +617,16 @@ class ConditionRender extends React.Component<{ conditon: Condition, onChange: (
         if (type === 'equals' || type === 'greater' || type === 'less') {
             content = (
                 <Horizontal alignItems="center">
-                    will show if
-                    <Input style={{ marginLeft: 8 }} value={(this.props.conditon as any).target} onChange={this.onTargetChange} />
+                    <Vertical>
+                        will show if
+                        <Input style={{ marginLeft: 8, width: 50 }} value={(this.props.conditon as any).target} onChange={this.onTargetChange} />
+                    </Vertical>
                     <Select value={type} onChange={this.onCompareTypeChange}>
                         <option value="equals">{'='}</option>
                         <option value="greater">{'>'}</option>
                         <option value="less">{'<'}</option>
                     </Select>
-                    <Input value={(this.props.conditon as any).ethalon} onChange={this.onEthalonChange} />
+                    <Input style={{ width: 50 }} value={(this.props.conditon as any).ethalon} onChange={this.onEthalonChange} />
                 </Horizontal>
             );
         }
@@ -658,14 +654,16 @@ class ActionRender extends React.Component<{ action: Action, onChange: (action: 
         if (type === 'set' || type === 'increment' || type === 'decriment') {
             content = (
                 <Horizontal alignItems="center">
-                    set
-                    <Input style={{ marginLeft: 8 }} value={this.props.action.target} onChange={this.onTargetChange} />
+                    <Vertical>
+                        set
+                        <Input style={{ marginLeft: 8, width: 50 }} value={this.props.action.target} onChange={this.onTargetChange} />
+                    </Vertical>
                     <Select value={type} onChange={this.onCompareTypeChange}>
                         <option value="set">{'='}</option>
                         <option value="increment">{'+'}</option>
                         <option value="decriment">{'-'}</option>
                     </Select>
-                    <Input value={this.props.action.value} onChange={this.onValueChange} />
+                    <Input style={{ width: 50 }} value={this.props.action.value} onChange={this.onValueChange} />
                 </Horizontal>
             );
         }
@@ -737,20 +735,22 @@ class ContenSettings<C extends Content | Reaction> extends React.Component<{ con
     }
 }
 
-class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void }, {
+class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange: (episode: Episode) => void, selectedElement?: string }, {
     selectedElement?: string | 'scene',
 }>{
-    constructor(props: { episode: Episode, onChange: (episode: Episode) => void }) {
-        super(props);
-        let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
-        this.state = { selectedElement: element ? (element.content || element.reaction).id : 'scene' };
+    extractState(props) {
+        let elements: { content?: Content, reaction?: Reaction }[] = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers];
+        let element = elements[0];
+        return { selectedElement: elements.filter(e => ((e.content || e.reaction) as any).id === props.selectedElement).length > 0 || props.selectedElement === 'scene' ? props.selectedElement : (element ? (element.content || element.reaction).id : 'scene') };
     }
 
-    componentWillReceiveProps(props: { episode: Episode }) {
-        let element: { content?: Content, reaction?: Reaction } = [...props.episode.contentReasolvers, ...props.episode.reactionReasolvers][0];
-        if (this.props.episode.id !== props.episode.id) {
-            this.setState({ selectedElement: element ? (element.content || element.reaction).id : 'scene' });
-        }
+    constructor(props: { episode: Episode, onChange: (episode: Episode) => void, selectedElement?: string }) {
+        super(props);
+        this.state = this.extractState(props);
+    }
+
+    componentWillReceiveProps(props: { episode: Episode, selectedElement?: string }) {
+        this.setState(this.extractState(props));
     }
     rename = (v: any) => {
         this.props.onChange({ ...this.props.episode, name: v.target.value });
@@ -804,22 +804,6 @@ class EpisodeEditComponent extends React.Component<{ episode: Episode, onChange:
         let elementContainer: { content?: Content, reaction?: Reaction, condition?: Condition, actions?: Action[] } = [...this.props.episode.contentReasolvers, ...this.props.episode.reactionReasolvers].filter((c: any) => (c.content || c.reaction).id === this.state.selectedElement)[0];
         return (
             <Horizontal width="100%">
-                <Vertical style={{ borderRight: '1px solid #3E5C6B' }} flex={1} padding="16px" scrollable={true} alignItems="flex-start">
-
-
-                    <Input value={this.props.episode.name} onChange={this.rename} />
-                    <Scene id={this.props.episode.sceneId} onClick={() => this.setState({ selectedElement: 'scene' })} />
-                    {this.props.episode.contentReasolvers.map(c =>
-                        <ContentRender selected={this.state.selectedElement === c.content.id} key={c.content.id} content={c.content} onClick={this.selectElement} />
-                    )}
-                    <Button onClick={this.addContent} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">edit</i></Button>
-
-                    {this.props.episode.reactionReasolvers.map(c =>
-                        <ContentRender selected={this.state.selectedElement === c.reaction.id} key={c.reaction.id} content={c.reaction} onClick={this.selectElement} />
-                    )}
-                    <Button onClick={this.addReaction} style={{ alignSelf: 'flex-start' }} color="#3E5C6B"><i className="material-icons">add</i><i className="material-icons">message</i></Button>
-
-                </Vertical>
                 <Vertical scrollable={true} style={{ flex: 1 }}>
                     {this.state.selectedElement !== 'scene' && (
                         <ContenSettings onActionsChange={this.onActionsChange} condition={elementContainer.condition} actions={elementContainer.reaction ? elementContainer.actions : null} content={elementContainer ? elementContainer.content || elementContainer.reaction : undefined} onChange={this.onElementChange} onCondtionChange={c => this.onConditionChange(((elementContainer.content || elementContainer.reaction) as any).id, c)} />
@@ -837,17 +821,27 @@ const ContentRenderMargin = Glamorous(ContentRender)({
     margin: 8,
 });
 
-class EpisodePreview extends React.Component<{ episode: Episode }>{
+class EpisodePreview extends React.Component<{ episode: Episode, onChange?: (episode: Episode) => void, onClick?: (content: Content) => void }>{
+    addContent = () => {
+        this.props.onChange({ ...this.props.episode, contentReasolvers: [...this.props.episode.contentReasolvers, { content: new TextContent("Some text") }] })
+    }
+
+    addReaction = () => {
+        this.props.onChange({ ...this.props.episode, reactionReasolvers: [...this.props.episode.reactionReasolvers, { reaction: new ReactionClosedText("Some reaction") }] })
+    }
     render() {
         return (
-            <div style={{ position: 'relative', flexBasis: '30%', height: 'calc(50%)', overflow: 'hidden' }} >
-                <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} />
-                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden' }} scrollable={true}>
+            <div style={{ position: 'relative', overflow: 'hidden', flex: 1 }} >
+                <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} onClick={() => this.props.onClick(null)} />
+                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden', width: '100%'}} scrollable={true}>
+                    <Input style={{margin: 16}} value={this.props.episode.name} onChange={this.props.onChange ? (v: any) => this.props.onChange({ ... this.props.episode, name: v.target.value }) : undefined} />
                     <Vertical style={{ flexGrow: 1, padding: 16, paddingBottom: 0, alignItems: 'flex-start' }}>
-                        {this.props.episode.contentReasolvers.map(c => <ContentRender content={c.content} />)}
+                        {this.props.episode.contentReasolvers.map(c => <ContentRender content={c.content} onClick={this.props.onClick} />)}
+                        <TextContentStyled onClick={this.addContent}  ><i className="material-icons">add</i><i className="material-icons">edit</i></TextContentStyled>
                     </Vertical>
-                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0 }} >
-                        {this.props.episode.reactionReasolvers.map(c => <ContentRenderMargin content={c.reaction} />)}
+                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0, flexShrink: 0 }} >
+                        {this.props.episode.reactionReasolvers.map(c => <ContentRenderMargin content={c.reaction} onClick={this.props.onClick} />)}
+                        <ActionTextContentStyled style={{ margin: 8 }} onClick={this.addReaction}  ><i className="material-icons">add</i><i className="material-icons">message</i></ActionTextContentStyled>
                     </div>
 
                 </Vertical>
@@ -856,18 +850,6 @@ class EpisodePreview extends React.Component<{ episode: Episode }>{
     }
 }
 
-const ChapterList = Glamorous.div({
-    height: 50,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'start',
-    flexShrink: 0,
-    overflowX: 'scroll',
-    overflowY: 'hidden',
-    maxWidth: '100%',
-    background: '#f7f7f7',
-});
-
 interface BuilderState {
     root: Episode,
     episodesMap: { [key: string]: Episode }
@@ -875,13 +857,8 @@ interface BuilderState {
     chapterMap: { [key: string]: Chapter }
     selectedChapter: string,
     selectedepisode: string,
+    selectedElement?: string,
 }
-
-const BottomConstainer = Glamorous(Horizontal)({
-    height: 'calc(50% - 50px)',
-    width: '100%',
-    borderTop: '1px solid #3E5C6B'
-});
 
 export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap: { [key: string]: Episode }, root: string }) => void }, BuilderState>{
     constructor(props: any) {
@@ -1035,23 +1012,21 @@ export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap:
         this.setState({ selectedepisode: id });
     }
 
+    selectElement = (content: Content) => {
+        this.setState({ selectedElement: content ? content.id : 'scene' });
+    }
 
     render() {
         return (
             <MapsProvider.Provider value={{ eMap: this.state.episodesMap, cMap: this.state.chapterMap }}>
-                <Vertical divider={0} className={(this.props as any).className}>
-                    <ChapterList>
-                        {this.state.timeLine.map((cId: string, i: number) => <ChapterListItem key={cId} item={this.state.chapterMap[cId]} index={i} onClick={() => this.setState({ selectedChapter: cId })} selected={cId === this.state.selectedChapter} move={this.moveChapter} />)}
-                        <Button onClick={this.newChapter} style={{ margin: 5 }}><i className="material-icons">add</i></Button>
-                    </ChapterList>
-                    <Horizontal>
-                        <ChapterMap eMap={this.state.episodesMap} selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
-                        <EpisodePreview episode={this.state.episodesMap[this.state.selectedepisode]} />
-                    </Horizontal>
-                    <BottomConstainer>
-                        <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode]} onChange={this.updateEpisode} />
-                    </BottomConstainer>
-                </ Vertical>
+                <ChapterComponent eMap={this.state.episodesMap} selectEpisode={this.selectEpisode} chapter={this.state.chapterMap[this.state.selectedChapter]} selectedEpisode={this.state.selectedepisode} onChange={this.onChapterLayoutRequestsChange} createEpiside={this.newEpisode} />
+
+                <Horizontal flex={2}>
+                    <EpisodePreview onChange={this.updateEpisode} episode={this.state.episodesMap[this.state.selectedepisode]} onClick={this.selectElement} />
+                </Horizontal>
+                <Horizontal flex={1}>
+                    <EpisodeEditComponent episode={this.state.episodesMap[this.state.selectedepisode]} selectedElement={this.state.selectedElement} onChange={this.updateEpisode} />
+                </Horizontal>
             </MapsProvider.Provider>
 
         )
