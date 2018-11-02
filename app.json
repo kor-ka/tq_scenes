@@ -1,0 +1,7 @@
+{
+    "name": "tq",
+    "description": "tq",
+    "repository": "https://github.com/kor-ka/tq_scenes",
+    "image": "heroku/nodejs"
+  }
+  

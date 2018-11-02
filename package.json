@@ -6,9 +6,14 @@
     "type": "git",
     "url": "https://github.com/basarat/react-typescript.git"
   },
+  "engines": {
+    "node": "10.x"
+  },
+  "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "build": "webpack -p",
-    "start": "webpack-dev-server -d --content-base ./public",
+    "local": "webpack-dev-server -d --content-base ./public",
     "postbuild": "cp -r public/ docs/"
   },
   "dependencies": {
@@ -28,6 +33,7 @@
     "typescript": "2.7.2",
     "webpack": "4.1.1",
     "webpack-cli": "2.0.11",
-    "webpack-dev-server": "3.1.1"
+    "webpack-dev-server": "3.1.1",
+    "express": "^4.15.2"
   }
 }
