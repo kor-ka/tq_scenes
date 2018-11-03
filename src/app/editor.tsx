@@ -5,6 +5,7 @@ import Glamorous from 'glamorous';
 import { SketchPicker as SketchPickerRaw } from 'react-color';
 import { getUid } from './utils/id';
 import { ScenePicker } from './scenePicker';
+import { Scenes } from './app';
 
 const SketchPicker = Glamorous(SketchPickerRaw)({
   boxShadow: 'none !important',
@@ -630,7 +631,7 @@ class AnimationFullItem extends React.Component<{ item: Animation, submit: (item
 
 
 
-class EditorState {
+export class EditorState {
   selectedScene?: string;
   tab: 'polygons' | 'animations' | 'settings' | 'picker';
   blur?: boolean;
@@ -857,39 +858,39 @@ export const animation = (anims: Animation[], polygons: Polygon[], selectedPolyg
 
 }
 
-export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id: string]: { polygons: Polygon[], animations: Animation[] } }) => void }, EditorState> {
+export class SceneEditor extends React.PureComponent<{ onChanged: (EditorState) => void, initialState: EditorState }, EditorState> {
   stateStack = [];
   undoPointer = 0;
   preventStackState = false;
-  constructor(props: any) {
+  constructor(props: { onChanged: (EditorState) => void, initialState: EditorState }) {
     super(props);
 
     //recover editor state
-    let editorState: EditorState = JSON.parse(window.localStorage.getItem('editorState')) || {};
+    let editorState = props.initialState;
 
-    //initial scenes state
-    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
-    if (!editorState.selectedScene) {
-      editorState.selectedScene = Object.keys(scenes)[0];
-    }
+    // //initial scenes state
+    // let scenes = editorState. || {};
+    // if (!editorState.selectedScene) {
+    //   editorState.selectedScene = Object.keys(scenes)[0];
+    // }
 
-    let polygons = [polygonItem, polygonItem2];
-    let animations = [glow, move];
-    let selectedScene = scenes[editorState.selectedScene];
-    if (selectedScene) {
-      polygons = selectedScene.polygons || polygons;
-      animations = selectedScene.animations || animations;
-    }
+    // let polygons = [polygonItem, polygonItem2];
+    // let animations = [glow, move];
+    // let selectedScene = scenes[editorState.selectedScene];
+    // if (selectedScene) {
+    //   polygons = selectedScene.polygons || polygons;
+    //   animations = selectedScene.animations || animations;
+    // }
 
     this.state = {
       tab: 'polygons',
-      polygons: polygons,
+      // polygons: polygons,
       border: true,
       grid: true,
       dragCircles: true,
-      animations: animations,
-      selectedP: polygons.length > 0 ? polygons[0].id : undefined,
-      selectedA: animations.length > 0 ? animations[0].id : undefined,
+      // animations: animations,
+      // selectedP: polygons.length > 0 ? polygons[0].id : undefined,
+      // selectedA: animations.length > 0 ? animations[0].id : undefined,
       animate: true,
       ...editorState
     };
@@ -926,16 +927,8 @@ export class SceneEditor extends React.PureComponent<{ onChanged: (scenes: { [id
   }
 
   componentDidUpdate() {
-    let { polygons, animations, selectedScene, ...editorState } = this.state;
 
-    window.localStorage.setItem('editorState', JSON.stringify(editorState));
-
-    let scenes = JSON.parse(window.localStorage.getItem('scenes')) || {};
-    console.warn(scenes);
-
-    scenes[selectedScene] = { id: selectedScene, polygons: polygons, animations: animations };
-    this.props.onChanged(scenes);
-    window.localStorage.setItem('scenes', JSON.stringify(scenes));
+    this.props.onChanged(this.state);
   }
 
   switchFlag(key: string) {

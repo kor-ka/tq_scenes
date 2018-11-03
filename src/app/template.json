@@ -1,4 +1,5 @@
 {
+    "tab": "builder",
     "scenes": {
         "undefined": {
             "id": "undefined",
@@ -593,7 +594,58 @@
         }
     },
     "episodes": {
-        "eMap": {
+        "root": {
+            "id": "episode_1541229233872",
+            "name": "Root episode",
+            "reactionReasolvers": [
+                {
+                    "reaction": {
+                        "id": "reaction_1541229233884",
+                        "type": "closed_text",
+                        "nextEpisode": "episode_1541229233876",
+                        "title": "go to next episode"
+                    }
+                }
+            ],
+            "contentReasolvers": [
+                {
+                    "content": {
+                        "id": "content_text_1541229233875",
+                        "type": "text",
+                        "text": "This is root episode, game will start from here"
+                    }
+                },
+                {
+                    "content": {
+                        "id": "content_text_1541229233888",
+                        "type": "text",
+                        "text": "Check out \"next episode\" on the right\n"
+                    }
+                },
+                {
+                    "content": {
+                        "id": "content_text_1541229233889",
+                        "type": "text",
+                        "text": "It's connected with current episode with arrow"
+                    }
+                },
+                {
+                    "content": {
+                        "id": "content_text_1541229233890",
+                        "type": "text",
+                        "text": "It's because this episode have \"go to next episode\" button"
+                    }
+                },
+                {
+                    "content": {
+                        "id": "content_text_1541229233891",
+                        "type": "text",
+                        "text": "now go on, click on \"next episode\""
+                    }
+                }
+            ]
+        },
+        "episodesMap": {
             "episode_1541229233872": {
                 "id": "episode_1541229233872",
                 "name": "Root episode",
@@ -720,6 +772,33 @@
                 ]
             }
         },
-        "root": "episode_1541229233872"
+        "timeLine": [
+            "chapter_1541263012079"
+        ],
+        "chapterMap": {
+            "chapter_1541263012079": {
+                "map": {
+                    "episode_1541229233872": {
+                        "episodeId": "episode_1541229233872",
+                        "x": 0,
+                        "y": 0
+                    },
+                    "episode_1541229233876": {
+                        "episodeId": "episode_1541229233876",
+                        "x": 2,
+                        "y": 0
+                    },
+                    "episode_1541229233880": {
+                        "episodeId": "episode_1541229233880",
+                        "x": 1,
+                        "y": 1
+                    }
+                },
+                "id": "chapter_1541263012079",
+                "name": "Chapter"
+            }
+        },
+        "selectedChapter": "chapter_1541263012079",
+        "selectedepisode": "episode_1541229233872"
     }
 }

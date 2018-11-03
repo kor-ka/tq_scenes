@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Horizontal, Vertical, Button, SceneEditor } from './editor';
-import { Builder, Episode } from './builder';
+import { Horizontal, Vertical, Button, SceneEditor, EditorState } from './editor';
+import { Builder, Episode, BuilderState } from './builder';
 import Glamorous from '../../node_modules/glamorous';
 import { Scenes } from './app';
 import { Player } from './player';
@@ -38,13 +38,12 @@ const PlayerStyled = Glamorous(Player)({
 export class BuilderRoot extends React.Component<{}, {
     tab: 'builder' | 'editor' | 'player',
     scenes: any,
-    episodes: { eMap: { [key: string]: Episode }, root: string },
+    episodes: BuilderState,
 }>{
+    sceneIniital: any;
     constructor(props: {}) {
         super(props);
-        let savedState = null;
-        // let savedState = JSON.parse(window.localStorage.getItem('rootState'));
-
+        let savedState = JSON.parse(window.localStorage.getItem('rootState'));
 
         if (!savedState) {
             savedState = template;
@@ -52,14 +51,31 @@ export class BuilderRoot extends React.Component<{}, {
             console.warn(savedState)
         }
 
+        this.sceneIniital = savedState.scenes['undefined'];
+
         this.state = { tab: 'builder', ...savedState };
     }
+
+    // export = () => {
+    //     let sceneExport = 'data:text/json;charset=utf-8,';
+    //     sceneExport += JSON.stringify(this.state);
+    //     var encodedUri = encodeURI(sceneExport);
+    //     var link = document.createElement('a');
+    //     link.setAttribute('href', encodedUri);
+    //     link.setAttribute('download', 'untitled_scene' + '.json');
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     document.body.removeChild(link);
+    // }
+
 
     componentDidUpdate() {
         window.localStorage.setItem('rootState', JSON.stringify(this.state));
     }
 
-    scenesUpdated = (scenes: any) => {
+    scenesUpdated = (scene: EditorState) => {
+        let scenes = { ...this.state.scenes };
+        scenes[scene.selectedScene] = { ...scene, id: scene.selectedScene }
         this.setState({
             scenes: scenes
         });
@@ -80,10 +96,10 @@ export class BuilderRoot extends React.Component<{}, {
                     {this.state.episodes && <TabButton color="white" onClick={() => this.setState({ tab: "player" })} disabled={this.state.tab === 'player'} active={true}><i className="material-icons">play_arrow</i></TabButton>}
                 </RootSidebar>
                 <Scenes.Provider value={this.state.scenes}>
-                    {this.state.tab === 'builder' && <BuilderStyled onChanged={this.episodesUpdated} />}
-                    {this.state.tab === 'player' && <PlayerStyled eMap={this.state.episodes.eMap} root={this.state.episodes.root} />}
+                    {this.state.tab === 'builder' && <BuilderStyled onChanged={this.episodesUpdated} initialState={this.state.episodes} />}
+                    {this.state.tab === 'player' && <PlayerStyled eMap={this.state.episodes.episodesMap} root={this.state.episodes.root.id} />}
                 </Scenes.Provider>
-                {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} />}
+                {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} initialState={this.sceneIniital} />}
             </Horizontal>
         );
     }

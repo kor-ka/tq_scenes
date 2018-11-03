@@ -97,7 +97,7 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
 
     constructor(props: any) {
         super(props);
-        this.state = { scenes: JSON.parse(window.localStorage.getItem('scenes')) || {} }
+        this.state = { scenes: JSON.parse(window.localStorage.getItem('rootState')).scenes || {} }
     }
 
     new = () => {
@@ -109,7 +109,7 @@ export class ScenePicker extends React.Component<{ create?: boolean, selected?: 
     }
 
     componentDidUpdate() {
-        window.localStorage.setItem('scenes', JSON.stringify(this.state.scenes));
+        // window.localStorage.setItem('scenes', JSON.stringify(this.state.scenes));
     }
 
     render() {

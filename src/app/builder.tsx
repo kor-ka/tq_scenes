@@ -850,7 +850,7 @@ class EpisodePreview extends React.Component<{ episode: Episode, onChange?: (epi
     }
 }
 
-interface BuilderState {
+export interface BuilderState {
     root: Episode,
     episodesMap: { [key: string]: Episode }
     timeLine: string[],
@@ -860,48 +860,15 @@ interface BuilderState {
     selectedElement?: string,
 }
 
-export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap: { [key: string]: Episode }, root: string }) => void }, BuilderState>{
+export class Builder extends React.PureComponent<{ onChanged: (builderState: BuilderState) => void, initialState: BuilderState }, BuilderState>{
     constructor(props: any) {
         super(props);
-
-        //recover editor state
-        let builderState = JSON.parse(window.localStorage.getItem('rootState')).episodes;
-        let episodesMap = builderState.eMap;
-        let root = episodesMap[builderState.root];
-
-        let chaptersState = JSON.parse(window.localStorage.getItem('chaptersState'));
-        if (!chaptersState) {
-            let rootChapter = new Chapter();
-            let i = 0;
-            for (let key of Object.keys(episodesMap)) {
-                rootChapter.map[key] = { episodeId: key, x: i === 0 ? 0 : i === 1 ? 2 : 1, y: i === 0 ? 0 : i === 1 ? 0 : 1 };
-                i++;
-            }
-            let chapterMap = {};
-            chapterMap[rootChapter.id] = rootChapter;
-
-            chaptersState = {
-                timeLine: [rootChapter.id],
-                chapterMap,
-                selectedChapter: rootChapter.id,
-                selectedepisode: builderState.root
-            }
-
-        }
-
-
-        this.state = {
-            root,
-            episodesMap,
-            ...chaptersState
-        }
-
-        this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
+        this.state = props.initialState;
     }
 
     componentDidUpdate() {
         window.localStorage.setItem('chaptersState', JSON.stringify({ timeLine: this.state.timeLine, chapterMap: this.state.chapterMap, selectedChapter: this.state.selectedChapter, selectedepisode: this.state.selectedepisode }));
-        this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
+        this.props.onChanged(this.state)
     }
 
     newEpisode = (targetChapter?: string) => {
