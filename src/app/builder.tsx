@@ -833,19 +833,19 @@ class EpisodePreview extends React.Component<{ episode: Episode, onChange?: (epi
         return (
             <div style={{ position: 'relative', overflow: 'hidden', flex: 1 }} >
                 <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} onClick={() => this.props.onClick(null)} />
-                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden', width: '100%'}} scrollable={true}>
-                    <Input style={{margin: 16}} value={this.props.episode.name} onChange={this.props.onChange ? (v: any) => this.props.onChange({ ... this.props.episode, name: v.target.value }) : undefined} />
+                <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden', width: '100%' }} scrollable={true}>
+                    <Input style={{ margin: 16 }} value={this.props.episode.name} onChange={this.props.onChange ? (v: any) => this.props.onChange({ ... this.props.episode, name: v.target.value }) : undefined} />
                     <Vertical style={{ flexGrow: 1, padding: 16, paddingBottom: 0, alignItems: 'flex-start' }}>
                         {this.props.episode.contentReasolvers.map(c => <ContentRender content={c.content} onClick={this.props.onClick} />)}
-                        <TextContentStyled onClick={this.addContent}  ><i className="material-icons">add</i><i className="material-icons">edit</i></TextContentStyled>
+                        <TextContentStyled onClick={this.addContent} style={{ fontSize: 12 }} >✏️</TextContentStyled>
                     </Vertical>
                     <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0, flexShrink: 0 }} >
                         {this.props.episode.reactionReasolvers.map(c => <ContentRenderMargin content={c.reaction} onClick={this.props.onClick} />)}
-                        <ActionTextContentStyled style={{ margin: 8 }} onClick={this.addReaction}  ><i className="material-icons">add</i><i className="material-icons">message</i></ActionTextContentStyled>
+                        <ActionTextContentStyled style={{ margin: 8, fontSize: 12 }} onClick={this.addReaction}  >💬</ActionTextContentStyled>
                     </div>
 
                 </Vertical>
-            </div>
+            </div >
         )
     }
 }
@@ -863,66 +863,44 @@ interface BuilderState {
 export class Builder extends React.PureComponent<{ onChanged: (episodes: { eMap: { [key: string]: Episode }, root: string }) => void }, BuilderState>{
     constructor(props: any) {
         super(props);
-        let root = new Episode();
-        root.name = 'Root episode';
-        root.contentReasolvers[0] = { content: new TextContent('Story starts here') };
-
-        let e2 = new Episode();
-        e2.contentReasolvers[0] = { content: new TextContent('Next part of story') };
-        e2.name = 'next episode';
-
-        let e3 = new Episode();
-        e3.contentReasolvers[0] = { content: new TextContent('One more part') };
-        e3.name = 'one more episode';
-
-        let next = new ReactionClosedText('go to next episode');
-        next.nextEpisode = e2.id;
-        root.reactionReasolvers[0] = { reaction: next };
-
-        let next2 = new ReactionClosedText('go to next episode');
-        next2.nextEpisode = e3.id;
-        e2.reactionReasolvers[0] = { reaction: next2 };
-
-        let back = new ReactionClosedText('go to start');
-        back.nextEpisode = root.id;
-        e3.reactionReasolvers[0] = { reaction: back };
-
-        let rootChapter = new Chapter();
-        rootChapter.name = 'Chapter 1';
-        rootChapter.map[root.id] = { episodeId: root.id, x: 0, y: 0 };
-        rootChapter.map[e2.id] = { episodeId: e2.id, x: 3, y: 0 };
-        rootChapter.map[e3.id] = { episodeId: e3.id, x: 0, y: 1 };
-
-        let eMap = {};
-        eMap[root.id] = root;
-        eMap[e2.id] = e2;
-        eMap[e3.id] = e3;
-
-        let cMap = {};
-        cMap[rootChapter.id] = rootChapter;
-
-        let defaultState: BuilderState = {
-            root: root,
-            timeLine: [rootChapter.id],
-            episodesMap: eMap,
-            chapterMap: cMap,
-            selectedChapter: rootChapter.id,
-            selectedepisode: root.id,
-        }
 
         //recover editor state
-        let builderState = JSON.parse(window.localStorage.getItem('builderState')) || defaultState;
+        let builderState = JSON.parse(window.localStorage.getItem('rootState')).episodes;
+        let episodesMap = builderState.eMap;
+        let root = episodesMap[builderState.root];
+
+        let chaptersState = JSON.parse(window.localStorage.getItem('chaptersState'));
+        if (!chaptersState) {
+            let rootChapter = new Chapter();
+            let i = 0;
+            for (let key of Object.keys(episodesMap)) {
+                rootChapter.map[key] = { episodeId: key, x: i === 0 ? 0 : i === 1 ? 2 : 1, y: i === 0 ? 0 : i === 1 ? 0 : 1 };
+                i++;
+            }
+            let chapterMap = {};
+            chapterMap[rootChapter.id] = rootChapter;
+
+            chaptersState = {
+                timeLine: [rootChapter.id],
+                chapterMap,
+                selectedChapter: rootChapter.id,
+                selectedepisode: builderState.root
+            }
+
+        }
+
 
         this.state = {
-            // ...defaultState
-            ...builderState
+            root,
+            episodesMap,
+            ...chaptersState
         }
 
         this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
     }
 
     componentDidUpdate() {
-        window.localStorage.setItem('builderState', JSON.stringify(this.state));
+        window.localStorage.setItem('chaptersState', JSON.stringify({ timeLine: this.state.timeLine, chapterMap: this.state.chapterMap, selectedChapter: this.state.selectedChapter, selectedepisode: this.state.selectedepisode }));
         this.props.onChanged({ eMap: this.state.episodesMap, root: this.state.root.id })
     }
 

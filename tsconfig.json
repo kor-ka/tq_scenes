@@ -8,5 +8,8 @@
   "include": [
     "src"
   ],
-  "compileOnSave": false
+  "compileOnSave": false,
+  "files": [
+    "./typings.d.ts",
+  ],
 }
