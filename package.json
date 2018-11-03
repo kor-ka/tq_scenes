@@ -11,10 +11,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "yarn build & node index.js",
     "build": "webpack -p",
-    "local": "webpack-dev-server -d --content-base ./public",
-    "postbuild": "cp -r public/ docs/ & cp public/build/app.js $PWD"
+    "local": "webpack-dev-server -d --content-base ./public"
   },
   "dependencies": {
     "@types/react": "16.4.1",
