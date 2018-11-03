@@ -14,7 +14,7 @@
     "start": "node index.js",
     "build": "webpack -p",
     "local": "webpack-dev-server -d --content-base ./public",
-    "postbuild": "cp -r public/ docs/"
+    "postbuild": "cp -r public/ docs/ & cp public/build/app.js $PWD"
   },
   "dependencies": {
     "@types/react": "16.4.1",
