@@ -1,4 +1,4 @@
-import redisGet, { redisSet, parseJson } from './src/server/redis'
+import { redisSet, redisGet, parseJson } from './src/server/redis'
 const express = require('express')
 const path = require('path')
 const PORT = process.env.PORT || 5000
