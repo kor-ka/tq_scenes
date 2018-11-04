@@ -12,7 +12,7 @@
   "main": "index.js",
   "scripts": {
     "start": "yarn build & node index.js",
-    "build": "webpack -p",
+    "build": "tsc -p tsconfig.json && webpack -p",
     "local": "webpack-dev-server -d --content-base ./public"
   },
   "dependencies": {
