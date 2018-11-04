@@ -11,8 +11,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "yarn build & node index.js",
-    "build": "tsc -p tsconfig.json && webpack -p",
+    "startServer": "yarn buildServer & node server/dist/index.js",
+    "buildServer": "tsc --p server",
+    "build": "webpack -p",
     "local": "webpack-dev-server -d --content-base ./public"
   },
   "dependencies": {

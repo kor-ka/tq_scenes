@@ -26,9 +26,9 @@
   integrity sha512-9NfEUDp3tgRhmoxzTpTo+lq+KIVFxZahuRX0LHF/9IzKHaWuoWsIrrJ61zw5cnnlGINX8lqJzXYfQTOICS5Q+A==
 
 "@types/react-color@^2.13.5":
-  version "2.13.5"
-  resolved "https://registry.yarnpkg.com/@types/react-color/-/react-color-2.13.5.tgz#38a5bcbb00c5de85d696a3f5adcd619256a57083"
-  integrity sha512-MShVbkZSUs/IJiaYDvZ7gubK1+T2CEGSFwImtOAc3PVLqvR5aQdbwaGZ1hYkKmQAC55eCoQ9BQTHJASyNWjvjw==
+  version "2.13.6"
+  resolved "https://registry.yarnpkg.com/@types/react-color/-/react-color-2.13.6.tgz#8ba9c600fbc4c6c43037d3a5eeeff77c0db995d7"
+  integrity sha512-c9DgSaSsSm4xR3FLoYAicaS1m93Jg4utkz04B02/9gq4hm6pcbeoCDv26jQAL5KKpAnaEI0LqY5CdRgA2RCAbQ==
   dependencies:
     "@types/react" "*"
 

@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/Cellar/node@10/10.13.0/bin/node /usr/local/Cellar/yarn/1.10.1/libexec/bin/yarn.js add @types/reids
+  /usr/local/Cellar/node@10/10.13.0/bin/node /usr/local/Cellar/yarn/1.10.1/libexec/bin/yarn.js buildServer
 
 PATH: 
   /usr/local/opt/node@10/bin:/usr/local/opt/icu4c/sbin:/usr/local/opt/icu4c/bin:/usr/local/opt/node@8/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/kor_ka/Library/Android/sdk/tools:/Users/kor_ka/Library/Android/sdk/platform-tools
@@ -14,17 +14,12 @@ Platform:
   darwin x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@types%2freids: Not found
-      at Request.params.callback [as _callback] (/usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:61073:18)
-      at Request.self.callback (/usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:120166:22)
-      at Request.emit (events.js:182:13)
-      at Request.<anonymous> (/usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:121138:10)
-      at Request.emit (events.js:182:13)
-      at IncomingMessage.<anonymous> (/usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:121060:12)
-      at Object.onceWrapper (events.js:273:13)
-      at IncomingMessage.emit (events.js:187:15)
-      at endReadableNT (_stream_readable.js:1094:12)
-      at process._tickCallback (internal/process/next_tick.js:63:19)
+  SyntaxError: /Users/kor_ka/Documents/tq/package.json: Unexpected token / in JSON at position 708
+      at JSON.parse (<anonymous>)
+      at /usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:1136:59
+      at Generator.next (<anonymous>)
+      at step (/usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:98:30)
+      at /usr/local/Cellar/yarn/1.10.1/libexec/lib/cli.js:109:13
 
 npm manifest: 
   {
@@ -40,7 +35,8 @@ npm manifest:
     },
     "main": "index.js",
     "scripts": {
-      "start": "yarn build & node index.js",
+      "startServer": "yarn buildServer & node server/dist/index.js",
+      "buildServer": "tsc --p server",
       "build": "webpack -p",
       "local": "webpack-dev-server -d --content-base ./public"
     },
@@ -48,11 +44,12 @@ npm manifest:
       "@types/react": "16.4.1",
       "@types/react-color": "^2.13.5",
       "@types/react-dom": "16.0.4",
+      "@types/redis": "^2.8.7",
       "express": "^4.15.2",
       "glamor": "^2.20.40",
       "glamorous": "^4.13.1",
       "react": "16.4.1",
-      "react-color": "^2.14.1",
+      // "react-color": "^2.14.1",
       "react-dom": "16.4.1",
       "react-modal": "^3.6.1",
       "react-router-dom": "^4.3.1",
@@ -124,6 +121,13 @@ Lockfile:
     integrity sha512-uZP8Fd4f7rwHKztnOhFJYEJsKXO7opmcyKk5P9vRC8UJAx3AiWaGFiLxDqPJqzO3n3IhF/v6rdscxadarEXnag==
     dependencies:
       csstype "^2.2.0"
+  
+  "@types/redis@^2.8.7":
+    version "2.8.7"
+    resolved "https://registry.yarnpkg.com/@types/redis/-/redis-2.8.7.tgz#e0825093fb1af9d5b4a7246c6d7d1163cc842c35"
+    integrity sha512-ZMW8M5LRxU0D4u2GhnCEqJ1/mUJKSudlCWxeP1FRxfZQqr0Pb4tonPLzDEyRpC50uvEfAP3xOLjDuUOWi0QHCQ==
+    dependencies:
+      "@types/node" "*"
   
   abbrev@1:
     version "1.1.1"
