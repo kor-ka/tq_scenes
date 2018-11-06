@@ -8,6 +8,6 @@ express()
   .get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
   })
-  .get('/game/get/:id/', (req, res) => res.send(redisGet(req.params.id)))
-  .post('/game/save/:id/', (req, res) => res.send(redisSet(req.params.id, JSON.stringify(req.body))))
+  .get('/game/get/:id/', async (req, res) =>  res.send(await redisGet(req.params.id)))
+  .post('/game/save/:id/', async (req, res) => res.send(await redisSet(req.params.id, JSON.stringify(req.body))))
   .listen(PORT, () => console.log(`Listening on ${PORT}`))
