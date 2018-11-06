@@ -1,13 +1,13 @@
 import { redisSet, redisGet, parseJson } from './src/redisUtil'
-const express = require('express')
+import * as express from 'express';
 const path = require('path')
 const PORT = process.env.PORT || 5000
 
 express()
-  .use(express.static(path.join(__dirname, 'public')))
-  .set('views', path.join(__dirname, 'views'))
-  .set('view engine', 'ejs')
-  .get('/', (req, res) => res.render('pages/index'))
-  .get('/game/get', (req, res) => res.send(redisGet(req.body.id)))
-  .get('/game/save', (req, res) => parseJson(req.body).then(json => res.send(redisSet(json.id, json.value))))
+  .use(express.static(path.join(__dirname, '../../public')))
+  .get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  })
+  .get('/game/get/:id/', (req, res) => res.send(redisGet(req.params.id)))
+  .post('/game/save/:id/', (req, res) => res.send(redisSet(req.params.id, JSON.stringify(req.body))))
   .listen(PORT, () => console.log(`Listening on ${PORT}`))
