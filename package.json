@@ -11,7 +11,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "startServer": "yarn buildFront & yarn buildServer & node server/dist/index.js",
+    "startServer": "yarn buildFront && yarn buildServer && node server/dist/index.js",
     "buildServer": "tsc --p server",
     "buildFront": "webpack -p",
     "local": "webpack-dev-server -d --content-base ./public"
@@ -22,6 +22,7 @@
     "@types/react-color": "^2.13.5",
     "@types/react-dom": "16.0.4",
     "@types/redis": "^2.8.7",
+    "body-parser": "^1.18.3",
     "express": "^4.15.2",
     "glamor": "^2.20.40",
     "glamorous": "^4.13.1",
