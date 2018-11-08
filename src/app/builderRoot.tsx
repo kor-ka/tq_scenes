@@ -39,7 +39,8 @@ export class BuilderRoot extends React.Component<{}, {
     tab: 'builder' | 'editor' | 'player',
     scenes?: any,
     episodes?: BuilderState,
-    loading: boolean
+    loading: boolean,
+    play: boolean
 }>{
     sceneIniital: any;
     saveBounce?: number;
@@ -47,6 +48,7 @@ export class BuilderRoot extends React.Component<{}, {
     constructor(props: {}) {
         super(props);
         this.id = window.location.pathname.split('/').filter(s => s.length)[0];
+        let play = window.location.pathname.split('/').filter(s => s.length)[1] === 'play';
 
         fetch('/api/game/get/' + this.id).then(async r => {
             // let savedState = JSON.parse(window.localStorage.getItem('rootState'));
@@ -61,10 +63,10 @@ export class BuilderRoot extends React.Component<{}, {
 
             this.sceneIniital = savedState.scenes['undefined'];
 
-            this.setState({ ...savedState, loading: false })
+            this.setState({ ...savedState, loading: false, play: play })
         })
 
-        this.state = { tab: 'builder', loading: true };
+        this.state = { tab: 'builder', loading: true, play: play };
 
 
     }
@@ -113,19 +115,23 @@ export class BuilderRoot extends React.Component<{}, {
     }
 
     render() {
-        return !this.state.loading ? (
-            <Horizontal divider={0} height="100%" >
-                <RootSidebar padding="16px">
-                    <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
-                    <TabButton color="white" onClick={() => this.setState({ tab: "editor" })} disabled={this.state.tab === 'editor'} active={true}><i className="material-icons">photo</i></TabButton>
-                    {this.state.episodes && <TabButton color="white" onClick={() => this.setState({ tab: "player" })} disabled={this.state.tab === 'player'} active={true}><i className="material-icons">play_arrow</i></TabButton>}
-                </RootSidebar>
-                <Scenes.Provider value={this.state.scenes}>
-                    {this.state.tab === 'builder' && <BuilderStyled onChanged={this.episodesUpdated} initialState={this.state.episodes} />}
-                    {this.state.tab === 'player' && <PlayerStyled eMap={this.state.episodes.episodesMap} root={this.state.episodes.root.id} />}
-                </Scenes.Provider>
-                {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} initialState={this.sceneIniital} />}
-            </Horizontal>
-        ) : 'loading';
+        return !this.state.loading ? this.state.play ? (
+            <Scenes.Provider value={this.state.scenes}>
+                <Player eMap={this.state.episodes.episodesMap} root={this.state.episodes.root.id} />
+            </Scenes.Provider>
+        ) : (
+                <Horizontal divider={0} height="100%" >
+                    <RootSidebar padding="16px">
+                        <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
+                        <TabButton color="white" onClick={() => this.setState({ tab: "editor" })} disabled={this.state.tab === 'editor'} active={true}><i className="material-icons">photo</i></TabButton>
+                        {this.state.episodes && <TabButton color="white" onClick={() => this.setState({ tab: "player" })} disabled={this.state.tab === 'player'} active={true}><i className="material-icons">play_arrow</i></TabButton>}
+                    </RootSidebar>
+                    <Scenes.Provider value={this.state.scenes}>
+                        {this.state.tab === 'builder' && <BuilderStyled onChanged={this.episodesUpdated} initialState={this.state.episodes} />}
+                        {this.state.tab === 'player' && <PlayerStyled eMap={this.state.episodes.episodesMap} root={this.state.episodes.root.id} />}
+                    </Scenes.Provider>
+                    {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} initialState={this.sceneIniital} />}
+                </Horizontal>
+            ) : 'loading';
     }
 }

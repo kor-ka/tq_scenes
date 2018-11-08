@@ -86,10 +86,12 @@ const applyAction = (state: { [key: string]: string }, action: Action) => {
     return state;
 }
 export class Player extends React.Component<PlayerProps, PlayerState>{
+    id: string;
     constructor(props: PlayerProps) {
         super(props);
-        //TODO save/restore state
-        this.state = {
+        this.id = window.location.pathname.split('/').filter(s => s.length)[0];
+        let strVars = window.localStorage.getItem('play_state_' + this.id);
+        this.state = strVars ? JSON.parse(strVars) : {
             currentErisode: props.root,
             vars: {}
         }
@@ -107,6 +109,10 @@ export class Player extends React.Component<PlayerProps, PlayerState>{
             currentErisode: reaction.nextEpisode || this.state.currentErisode,
             vars: vars,
         })
+    }
+
+    componentDidUpdate() {
+        window.localStorage.setItem('play_state_' + this.id, JSON.stringify(this.state))
     }
 
     render() {
