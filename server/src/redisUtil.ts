@@ -12,6 +12,8 @@ export let redisSet = (key: string, value: string) => {
 export let redisGet = (key: string) => {
     return new Promise<String>(async resolve => {
         console.log('redisGet', key)
-        await client.get(key, (res, s) => resolve(s));
+        // await client.get(key, (res, s) => resolve(s));
+        await client.get(key, (res, s) => resolve(s !== 'undefined' ? s : undefined));
+
     })
 }

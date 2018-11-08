@@ -55,7 +55,6 @@ export class BuilderRoot extends React.Component<{}, {
             window.localStorage.setItem('rootState', JSON.stringify(savedState));
 
             if (!savedState || !savedState.scenes || !savedState.episodes) {
-                console.warn('smth wrong', savedState, savedState.scenes, savedState.episodes);
                 savedState = template;
                 window.localStorage.setItem('rootState', JSON.stringify(savedState));
             }

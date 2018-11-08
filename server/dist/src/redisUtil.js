@@ -19,6 +19,7 @@ exports.redisSet = (key, value) => {
 exports.redisGet = (key) => {
     return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
         console.log('redisGet', key);
-        yield client.get(key, (res, s) => resolve(s));
+        // await client.get(key, (res, s) => resolve(s));
+        yield client.get(key, (res, s) => resolve(s !== 'undefined' ? s : undefined));
     }));
 };
