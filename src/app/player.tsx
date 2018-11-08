@@ -21,7 +21,7 @@ class EpisodeRender extends React.Component<{ episode: { sceneId: string, conten
     render() {
 
         return (
-            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} >
+            <div key={this.props.episode.sceneId} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} >
                 <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} />
                 <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden' }} scrollable={true}>
                     <Vertical style={{ flexGrow: 1, padding: 16, paddingBottom: 0, alignItems: 'flex-start' }}>
