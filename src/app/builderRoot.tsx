@@ -37,23 +37,37 @@ const PlayerStyled = Glamorous(Player)({
 
 export class BuilderRoot extends React.Component<{}, {
     tab: 'builder' | 'editor' | 'player',
-    scenes: any,
-    episodes: BuilderState,
+    scenes?: any,
+    episodes?: BuilderState,
+    loading: boolean
 }>{
     sceneIniital: any;
+    saveBounce?: number;
+    id: string;
     constructor(props: {}) {
         super(props);
-        let savedState = JSON.parse(window.localStorage.getItem('rootState'));
+        this.id = window.location.pathname.split('/').filter(s => s.length)[0];
 
-        if (!savedState) {
-            savedState = template;
+        fetch('/api/game/get/' + this.id).then(async r => {
+            // let savedState = JSON.parse(window.localStorage.getItem('rootState'));
+            let savedState = JSON.parse(await r.json());
+            // for scene picker, todo: remove
             window.localStorage.setItem('rootState', JSON.stringify(savedState));
-            console.warn(savedState)
-        }
 
-        this.sceneIniital = savedState.scenes['undefined'];
+            if (!savedState || !savedState.scenes || !savedState.episodes) {
+                console.warn('smth wrong', savedState, savedState.scenes, savedState.episodes);
+                savedState = template;
+                window.localStorage.setItem('rootState', JSON.stringify(savedState));
+            }
 
-        this.state = { tab: 'builder', ...savedState };
+            this.sceneIniital = savedState.scenes['undefined'];
+
+            this.setState({ ...savedState, loading: false })
+        })
+
+        this.state = { tab: 'builder', loading: true };
+
+
     }
 
     // export = () => {
@@ -68,9 +82,21 @@ export class BuilderRoot extends React.Component<{}, {
     //     document.body.removeChild(link);
     // }
 
-
     componentDidUpdate() {
-        window.localStorage.setItem('rootState', JSON.stringify(this.state));
+
+        // window.localStorage.setItem('rootState', JSON.stringify(this.state));
+        if (this.saveBounce) {
+            window.clearTimeout(this.saveBounce);
+        }
+        this.saveBounce = window.setTimeout(async () => {
+            await fetch('/api/game/save/' + this.id, {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                body: JSON.stringify(this.state)
+            });
+        }, 500);
     }
 
     scenesUpdated = (scene: EditorState) => {
@@ -88,7 +114,7 @@ export class BuilderRoot extends React.Component<{}, {
     }
 
     render() {
-        return (
+        return !this.state.loading ? (
             <Horizontal divider={0} height="100%" >
                 <RootSidebar padding="16px">
                     <TabButton color="white" onClick={() => this.setState({ tab: "builder" })} disabled={this.state.tab === 'builder'} active={true}><i className="material-icons">call_split</i></TabButton>
@@ -101,6 +127,6 @@ export class BuilderRoot extends React.Component<{}, {
                 </Scenes.Provider>
                 {this.state.tab === 'editor' && <SceneEditor onChanged={this.scenesUpdated} initialState={this.sceneIniital} />}
             </Horizontal>
-        );
+        ) : 'loading';
     }
 }
