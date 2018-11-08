@@ -21,13 +21,13 @@ class EpisodeRender extends React.Component<{ episode: { sceneId: string, conten
     render() {
 
         return (
-            <div style={{ position: 'relative', width: "100%", overflow: 'hidden' }} >
+            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} >
                 <SceneBackground id={this.props.episode.sceneId} raw={true} fill={true} blur={true} animated={true} />
                 <Vertical style={{ position: 'absolute', left: 0, top: 0, padding: 0, height: '100%', overflowX: 'hidden' }} scrollable={true}>
                     <Vertical style={{ flexGrow: 1, padding: 16, paddingBottom: 0, alignItems: 'flex-start' }}>
                         {this.props.episode.content.map(c => <ContentRender content={c} />)}
                     </Vertical>
-                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0 }} >
+                    <div style={{ flexWrap: 'wrap', display: 'flex', marginLeft: -8, marginRight: -8, padding: 16, paddingBottom: 8, paddingTop: 0, flexShrink: 0 }} >
                         {this.props.episode.reactions.map(c => <ContentRenderMargin content={c} onClick={() => this.props.onRreaction(c)} />)}
                     </div>
 

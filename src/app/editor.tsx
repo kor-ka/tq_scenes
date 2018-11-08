@@ -147,6 +147,7 @@ export const Vertical = Glamorous.div<{
   flexShrink: 0,
   flex: props.flex,
   overflowY: props.scrollable ? 'scroll' : undefined,
+  WebkitOverflowScrolling: 'touch',
   '> *': {
     marginTop: props.divider !== undefined ? props.divider : 8,
     marginBottom: props.divider !== undefined ? props.divider : 8
